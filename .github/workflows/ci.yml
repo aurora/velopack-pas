@@ -43,3 +43,35 @@ jobs:
         run: lazbuild packages/lazarus/velopack_pas.lpk
       - name: Build LCL example
         run: lazbuild examples/lcl/UpdaterDemo.lpi
+
+  # Builds the real Velopack native library from the pinned revision, checks that
+  # the vendored header has not drifted and runs the suite incl. smoke tests.
+  real-library:
+    name: Tests against the real Velopack library (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read pinned Velopack revision
+        id: pin
+        run: echo "commit=$(sed -n 's/^commit=//p' third_party/velopack/VERSION)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          repository: velopack/velopack
+          ref: ${{ steps.pin.outputs.commit }}
+          path: velopack-src
+      - name: Vendored header matches the pinned revision
+        run: diff -u third_party/velopack/Velopack.h velopack-src/src/lib-cpp/include/Velopack.h
+      - name: Install Free Pascal and a C compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fpc gcc
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: velopack-src
+      - name: Build native library
+        run: cargo build --release -p velopack_libc
+        working-directory: velopack-src
+      - name: Run tests
+        run: tests/run-tests.sh
+        env:
+          VELOPACK_REAL_LIB: ${{ github.workspace }}/velopack-src/target/release/libvelopack_libc.so
