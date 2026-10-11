@@ -76,6 +76,7 @@ type
     FInfo: TUpdateInfo;
     FJob: TJob;
     FRetired: TJobArray;
+    FDestroying: Boolean;
     FLock: TCriticalSection;
     FPending: TMessageArray;
     FOnCheckCompleted: TVelopackCheckEvent;
@@ -89,6 +90,7 @@ type
     procedure StartJob(AKind: TJobKind);
     procedure Post(const AMessage: TMessage);
     procedure Drain;
+    procedure DiscardPending;
     procedure RetireJob;
     procedure ReapRetired(AWait: Boolean);
     procedure WorkerProgress(Sender: TObject; Percent: Integer);
@@ -179,6 +181,10 @@ end;
 
 destructor TVelopackUpdater.Destroy;
 begin
+  // From here on Drain only discards. Joining the worker below can run the
+  // main-thread queue (TThread.WaitFor pumps it), which would otherwise raise
+  // events on a half-destroyed component.
+  FDestroying := True;
   if FJob <> nil then
   begin
     FJob.WaitFor;
@@ -187,7 +193,7 @@ begin
   ReapRetired(True);
   // Drop notifications that were queued but not yet delivered.
   TThread.RemoveQueuedEvents(Drain);
-  Setlength(FPending, 0);
+  DiscardPending;
   FreeAndNil(FInfo);
   FreeAndNil(FManager);
   FreeAndNil(FLock);
@@ -364,12 +370,35 @@ begin
   FRetired := Keep;
 end;
 
+{ Throws away queued messages and frees the update info they may carry
+  (ownership moved to the main thread with the message). }
+procedure TVelopackUpdater.DiscardPending;
+var
+  Batch: TMessageArray;
+  I: Integer;
+begin
+  FLock.Acquire;
+  try
+    Batch := FPending;
+    FPending := nil;
+  finally
+    FLock.Release;
+  end;
+  for I := 0 to High(Batch) do
+    Batch[I].Info.Free;
+end;
+
 procedure TVelopackUpdater.Drain;
 var
   Batch: TMessageArray;
   I: Integer;
   Msg: TMessage;
 begin
+  if FDestroying then
+  begin
+    DiscardPending;
+    Exit;
+  end;
   FLock.Acquire;
   try
     Batch := FPending;
