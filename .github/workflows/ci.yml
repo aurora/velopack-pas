@@ -114,14 +114,11 @@ jobs:
         run: |
           fpc -iV -iTP -iTO
           gcc --version | head -1
-      - name: Locate FPCUnit
-        shell: msys2 {0}
-        run: |
-          find /c/tools/freepascal -iname 'consoletestrunner*' | head
-          find /c/tools/freepascal -iname 'fpcunit*' | head
-          ls /c/tools/freepascal
       - name: Run tests
         shell: msys2 {0}
+        # The choco FPC finds the RTL but not the FCL units (no fpc.cfg).
+        env:
+          FPC_OPTS: -FuC:/tools/freepascal/units/i386-win32/*
         run: tests/run-tests.sh
       - name: Build console example
         shell: msys2 {0}

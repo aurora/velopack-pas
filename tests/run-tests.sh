@@ -18,8 +18,12 @@ esac
 gcc -Wall -Wextra -shared $stub_flags -I third_party/velopack \
   -o "build/$stub_name" tests/stub/velopack_stub.c
 
-fpc -Mdelphi -g -Fu"src" -Fu"tests" -FUbuild/units -FEbuild \
+# FPC_OPTS: extra compiler options, e.g. unit paths when fpc.cfg is missing.
+set -f   # keep '*' in FPC_OPTS for the compiler instead of globbing it
+# shellcheck disable=SC2086
+fpc -Mdelphi -g -Fu"src" -Fu"tests" -FUbuild/units -FEbuild ${FPC_OPTS:-} \
   -vewn tests/VelopackTests.lpr | grep -E "Error|Fatal|Warning|Note: .*unused" || true
+set +f
 
 # TestSupport looks for build/<default library name> relative to the working
 # directory; set STUB_LIB to override.
