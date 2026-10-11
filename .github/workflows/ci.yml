@@ -81,7 +81,9 @@ jobs:
   # is stable (then remove continue-on-error).
   # Toolchain: 32-bit Free Pascal (choco) + 32-bit GCC (MSYS2 MINGW32) so that
   # the test program and the C stub have the same architecture.
-  # Not covered yet: 64-bit, Lazarus package / LCL example on Windows.
+  # Passed once its toolchain problems were sorted out; keep continue-on-error
+  # until it has proven stable (the FPC/choco install is slow and can flake).
+  # Not covered yet: 64-bit, real library, Lazarus package / LCL example.
   windows:
     name: FPC tests (Windows 32-bit, experimental)
     runs-on: windows-latest
@@ -129,17 +131,6 @@ jobs:
             timeout 60 tests/run-tests.sh --suite=$suite || { echo "FAILED or timed out: $suite (exit $?)"; status=1; }
           done
           exit $status
-      - name: Updater tests one by one (diagnostic)
-        if: failure()
-        shell: msys2 {0}
-        env:
-          FPC_OPTS: -FuC:/tools/freepascal/units/i386-win32/*
-        run: |
-          for t in CheckReportsAvailableUpdateOnMainThread CheckReportsNoUpdate DownloadReportsProgressThenCompleted ErrorsAreDeliveredAsEvents SecondOperationWhileBusyRaises DownloadWithoutCheckRaises ApplyWithoutDownloadRaises DestroyWhileBusyIsSafe; do
-            echo "=== $t"
-            timeout 20 build/VelopackTests --all --format=plain --suite=TUpdaterTests.$t 2>&1 | grep -E "Number of (run|errors|failures)" || echo "HUNG or failed: $t"
-          done
-          exit 0
       - name: Build console example
         shell: msys2 {0}
         run: |
