@@ -32,6 +32,18 @@ type
     property Native: Pvpkc_asset_t read GetNative;
   end;
 
+  { Same idea as TNativeAssetHolder, for a locator configuration. }
+  TNativeLocatorHolder = class
+  private
+    FRootAppDir, FUpdateExePath, FPackagesDir, FManifestPath,
+      FCurrentBinaryDir: UTF8String;
+    FNative: vpkc_locator_config_t;
+    function GetNative: Pvpkc_locator_config_t;
+  public
+    constructor Create(const ALocator: TVelopackLocator);
+    property Native: Pvpkc_locator_config_t read GetNative;
+  end;
+
 { Message from vpkc_get_last_error, or '' if none is available. }
 function LastNativeError: string;
 
@@ -147,6 +159,29 @@ begin
   FNative.Size := AAsset.Size;
   FNative.NotesMarkdown := PAnsiChar(FNotesMarkdown);
   FNative.NotesHtml := PAnsiChar(FNotesHtml);
+end;
+
+{ TNativeLocatorHolder }
+
+function TNativeLocatorHolder.GetNative: Pvpkc_locator_config_t;
+begin
+  Result := @FNative;
+end;
+
+constructor TNativeLocatorHolder.Create(const ALocator: TVelopackLocator);
+begin
+  inherited Create;
+  FRootAppDir := ToUtf8(ALocator.RootAppDir);
+  FUpdateExePath := ToUtf8(ALocator.UpdateExePath);
+  FPackagesDir := ToUtf8(ALocator.PackagesDir);
+  FManifestPath := ToUtf8(ALocator.ManifestPath);
+  FCurrentBinaryDir := ToUtf8(ALocator.CurrentBinaryDir);
+  FNative.RootAppDir := PAnsiChar(FRootAppDir);
+  FNative.UpdateExePath := PAnsiChar(FUpdateExePath);
+  FNative.PackagesDir := PAnsiChar(FPackagesDir);
+  FNative.ManifestPath := PAnsiChar(FManifestPath);
+  FNative.CurrentBinaryDir := PAnsiChar(FCurrentBinaryDir);
+  FNative.IsPortable := ALocator.IsPortable;
 end;
 
 end.

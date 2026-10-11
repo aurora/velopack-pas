@@ -80,15 +80,25 @@ type
     FAppId: string;
     FIsPortable: Boolean;
     procedure Initialize;
+    procedure InitFromUrl(const AUrl: string; const AOptions: TUpdateOptions;
+      ALocator: Pvpkc_locator_config_t);
+    procedure InitFromSource(ASource: TUpdateSource;
+      const AOptions: TUpdateOptions; ALocator: Pvpkc_locator_config_t);
   public
     { Fetches updates from a URL or a local directory. }
     constructor Create(const AUrlOrPath: string); overload;
     constructor Create(const AUrlOrPath: string; const AOptions: TUpdateOptions); overload;
+    { Like above, with explicit application paths instead of the automatic
+      lookup (see TVelopackLocator). }
+    constructor Create(const AUrlOrPath: string; const AOptions: TUpdateOptions;
+      const ALocator: TVelopackLocator); overload;
     { Fetches updates from the hosted Velopack Flow service. }
     constructor CreateFlow(const AOptions: TUpdateOptions);
     { Uses a custom source. The source can be freed afterwards. }
     constructor CreateWithSource(ASource: TUpdateSource); overload;
     constructor CreateWithSource(ASource: TUpdateSource; const AOptions: TUpdateOptions); overload;
+    constructor CreateWithSource(ASource: TUpdateSource;
+      const AOptions: TUpdateOptions; const ALocator: TVelopackLocator); overload;
     destructor Destroy; override;
 
     { Returns True and the asset if an update was already downloaded and only
@@ -274,20 +284,56 @@ begin
   Create(AUrlOrPath, DefaultUpdateOptions);
 end;
 
-constructor TUpdateManager.Create(const AUrlOrPath: string;
-  const AOptions: TUpdateOptions);
+procedure TUpdateManager.InitFromUrl(const AUrl: string;
+  const AOptions: TUpdateOptions; ALocator: Pvpkc_locator_config_t);
 var
   Url, Channel: UTF8String;
   NativeOptions: vpkc_update_options_t;
 begin
-  inherited Create;
   VpkcLoad;
-  Url := ToUtf8(AUrlOrPath);
+  Url := ToUtf8(AUrl);
   Channel := ToUtf8(AOptions.ExplicitChannel);
   FillNativeOptions(AOptions, Channel, NativeOptions);
-  if not vpkc_new_update_manager(PAnsiChar(Url), @NativeOptions, nil, @FHandle) then
+  if not vpkc_new_update_manager(PAnsiChar(Url), @NativeOptions, ALocator,
+    @FHandle) then
     RaiseLastNativeError('Cannot create update manager');
   Initialize;
+end;
+
+procedure TUpdateManager.InitFromSource(ASource: TUpdateSource;
+  const AOptions: TUpdateOptions; ALocator: Pvpkc_locator_config_t);
+var
+  Channel: UTF8String;
+  NativeOptions: vpkc_update_options_t;
+begin
+  VpkcLoad;
+  Channel := ToUtf8(AOptions.ExplicitChannel);
+  FillNativeOptions(AOptions, Channel, NativeOptions);
+  if not vpkc_new_update_manager_with_source(ASource.FHandle, @NativeOptions,
+    ALocator, @FHandle) then
+    RaiseLastNativeError('Cannot create update manager');
+  Initialize;
+end;
+
+constructor TUpdateManager.Create(const AUrlOrPath: string;
+  const AOptions: TUpdateOptions);
+begin
+  inherited Create;
+  InitFromUrl(AUrlOrPath, AOptions, nil);
+end;
+
+constructor TUpdateManager.Create(const AUrlOrPath: string;
+  const AOptions: TUpdateOptions; const ALocator: TVelopackLocator);
+var
+  Holder: TNativeLocatorHolder;
+begin
+  inherited Create;
+  Holder := TNativeLocatorHolder.Create(ALocator);
+  try
+    InitFromUrl(AUrlOrPath, AOptions, Holder.Native);
+  finally
+    Holder.Free;
+  end;
 end;
 
 constructor TUpdateManager.CreateFlow(const AOptions: TUpdateOptions);
@@ -311,18 +357,23 @@ end;
 
 constructor TUpdateManager.CreateWithSource(ASource: TUpdateSource;
   const AOptions: TUpdateOptions);
-var
-  Channel: UTF8String;
-  NativeOptions: vpkc_update_options_t;
 begin
   inherited Create;
-  VpkcLoad;
-  Channel := ToUtf8(AOptions.ExplicitChannel);
-  FillNativeOptions(AOptions, Channel, NativeOptions);
-  if not vpkc_new_update_manager_with_source(ASource.FHandle, @NativeOptions,
-    nil, @FHandle) then
-    RaiseLastNativeError('Cannot create update manager');
-  Initialize;
+  InitFromSource(ASource, AOptions, nil);
+end;
+
+constructor TUpdateManager.CreateWithSource(ASource: TUpdateSource;
+  const AOptions: TUpdateOptions; const ALocator: TVelopackLocator);
+var
+  Holder: TNativeLocatorHolder;
+begin
+  inherited Create;
+  Holder := TNativeLocatorHolder.Create(ALocator);
+  try
+    InitFromSource(ASource, AOptions, Holder.Native);
+  finally
+    Holder.Free;
+  end;
 end;
 
 destructor TUpdateManager.Destroy;

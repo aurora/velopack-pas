@@ -53,6 +53,20 @@ type
     MaximumDeltasBeforeFallback: Integer;
   end;
 
+  { Explicit application paths. Normally Velopack locates them itself from the
+    running executable of an installed app; set them to use the update manager
+    outside an installation (tests, portable layouts, custom hosts). }
+  TVelopackLocator = record
+    { Root directory of the app (on Linux the path of the AppImage). }
+    RootAppDir: string;
+    UpdateExePath: string;
+    PackagesDir: string;
+    { Path of the app manifest (a .nuspec / sq.version file). }
+    ManifestPath: string;
+    CurrentBinaryDir: string;
+    IsPortable: Boolean;
+  end;
+
   { Download progress, 0..100. Invoked on the thread that runs the download. }
   TVelopackProgressEvent = procedure(Sender: TObject; Percent: Integer) of object;
 
