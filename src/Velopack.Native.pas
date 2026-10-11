@@ -16,9 +16,9 @@ uses
   SysUtils;
 
 const
-  { Default file name of the native library. NOT YET VERIFIED against an
-    official Velopack release, see docs/implementation-plan.md (open
-    questions). Override with VpkcLibraryName or VELOPACK_LIBRARY. }
+  { Default file name of the native library: the cdylib of the Velopack crate
+    "velopack_libc" (src/lib-cpp). Override with VpkcLibraryName or the
+    VELOPACK_LIBRARY environment variable. }
 {$IFDEF VPK_WINDOWS}
   VPKC_DEFAULT_LIBRARY = 'velopack_libc.dll';
 {$ELSE}
