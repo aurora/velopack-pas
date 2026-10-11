@@ -1,0 +1,5 @@
+# Velopack revision that Velopack.h was taken from and that CI builds the
+# native library from. Update both together (see AGENTS.md, "Native interop").
+repository=https://github.com/velopack/velopack
+commit=301077f4792250d5ff4eff1ff4f22021421a506b
+version_json=1.3

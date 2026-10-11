@@ -5,7 +5,7 @@ program VelopackTests;
 uses
   {$IFDEF UNIX}cthreads,{$ENDIF}
   Classes, consoletestrunner,
-  TestStrings, TestNative, TestManager, TestApp, TestLog, TestUpdater;
+  TestStrings, TestNative, TestManager, TestApp, TestLog, TestUpdater, TestRealLibrary;
 
 type
   TVelopackTestRunner = class(TTestRunner);
