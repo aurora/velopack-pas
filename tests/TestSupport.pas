@@ -9,8 +9,8 @@ interface
 uses
   SysUtils, DynLibs;
 
-{ Full path of the stub library (env STUB_LIB, default build/libvelopack_libc.so
-  relative to the working directory). }
+{ Full path of the stub library (env STUB_LIB, default build/<default library
+  name of the platform> relative to the working directory). }
 function StubLibraryPath: string;
 
 { Points Velopack.Native at the stub and loads it. }
@@ -47,7 +47,7 @@ function StubLibraryPath: string;
 begin
   Result := GetEnvironmentVariable('STUB_LIB');
   if Result = '' then
-    Result := ExpandFileName('build/libvelopack_libc.so');
+    Result := ExpandFileName('build/' + VPKC_DEFAULT_LIBRARY);
 end;
 
 procedure UseStubLibrary;
