@@ -18,7 +18,13 @@
 
   Only one operation runs at a time. Console programs must call
   CheckSynchronize regularly; with Free Pascal on Unix the program has to link
-  cthreads. }
+  cthreads.
+
+  Threading rule: code that runs inside CheckSynchronize (the Drain method and
+  the events it raises) never waits for a thread. On Windows, FPC's
+  TThread.WaitFor calls CheckSynchronize itself, so waiting from within a
+  queued method re-enters the queue. Finished worker threads are therefore
+  retired and freed later, from outside the queue. }
 unit Velopack.Updater;
 
 {$I Velopack.Compat.inc}
@@ -61,6 +67,7 @@ type
       public
         constructor Create(AOwner: TVelopackUpdater; AKind: TJobKind);
       end;
+      TJobArray = array of TJob;
   private
     FUpdateUrl: string;
     FAllowVersionDowngrade: Boolean;
@@ -68,6 +75,7 @@ type
     FManager: TUpdateManager;
     FInfo: TUpdateInfo;
     FJob: TJob;
+    FRetired: TJobArray;
     FLock: TCriticalSection;
     FPending: TMessageArray;
     FOnCheckCompleted: TVelopackCheckEvent;
@@ -81,7 +89,8 @@ type
     procedure StartJob(AKind: TJobKind);
     procedure Post(const AMessage: TMessage);
     procedure Drain;
-    procedure ReleaseJob;
+    procedure RetireJob;
+    procedure ReapRetired(AWait: Boolean);
     procedure WorkerProgress(Sender: TObject; Percent: Integer);
     procedure RunCheck;
     procedure RunDownload;
@@ -175,6 +184,7 @@ begin
     FJob.WaitFor;
     FreeAndNil(FJob);
   end;
+  ReapRetired(True);
   // Drop notifications that were queued but not yet delivered.
   TThread.RemoveQueuedEvents(Drain);
   Setlength(FPending, 0);
@@ -228,6 +238,7 @@ end;
 procedure TVelopackUpdater.StartJob(AKind: TJobKind);
 begin
   RequireIdle;
+  ReapRetired(False);
   FJob := TJob.Create(Self, AKind);
   FJob.Start;
 end;
@@ -315,13 +326,42 @@ end;
 
 { ---- main thread side ---- }
 
-procedure TVelopackUpdater.ReleaseJob;
+{ Called from Drain: the job has posted its final message, so it is no longer
+  busy as far as the user is concerned. It is only parked here; it must not be
+  waited for (see the threading rule at the top of this unit). }
+procedure TVelopackUpdater.RetireJob;
 begin
-  if FJob <> nil then
-  begin
-    FJob.WaitFor;
-    FreeAndNil(FJob);
-  end;
+  if FJob = nil then
+    Exit;
+  SetLength(FRetired, Length(FRetired) + 1);
+  FRetired[High(FRetired)] := FJob;
+  FJob := nil;
+  ReapRetired(False);
+end;
+
+{ Frees retired jobs. Without AWait only threads that have already finished
+  are freed (no blocking); with AWait (destructor only) it joins them. }
+procedure TVelopackUpdater.ReapRetired(AWait: Boolean);
+var
+  I, N: Integer;
+  Keep: TJobArray;
+begin
+  Keep := nil;
+  N := 0;
+  for I := 0 to High(FRetired) do
+    if AWait or FRetired[I].Finished then
+    begin
+      if AWait then
+        FRetired[I].WaitFor;
+      FRetired[I].Free;
+    end
+    else
+    begin
+      SetLength(Keep, N + 1);
+      Keep[N] := FRetired[I];
+      Inc(N);
+    end;
+  FRetired := Keep;
 end;
 
 procedure TVelopackUpdater.Drain;
@@ -347,7 +387,7 @@ begin
           FOnDownloadProgress(Self, Msg.Percent);
       mkCheckDone:
         begin
-          ReleaseJob;
+          RetireJob;
           FreeAndNil(FInfo);
           FInfo := Msg.Info;
           if Assigned(FOnCheckCompleted) then
@@ -358,13 +398,13 @@ begin
         end;
       mkDownloadDone:
         begin
-          ReleaseJob;
+          RetireJob;
           if Assigned(FOnDownloadCompleted) then
             FOnDownloadCompleted(Self);
         end;
       mkError:
         begin
-          ReleaseJob;
+          RetireJob;
           if Assigned(FOnError) then
             FOnError(Self, Msg.Text);
         end;
