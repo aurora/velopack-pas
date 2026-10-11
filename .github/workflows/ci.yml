@@ -129,6 +129,17 @@ jobs:
             timeout 60 tests/run-tests.sh --suite=$suite || { echo "FAILED or timed out: $suite (exit $?)"; status=1; }
           done
           exit $status
+      - name: Updater tests one by one (diagnostic)
+        if: failure()
+        shell: msys2 {0}
+        env:
+          FPC_OPTS: -FuC:/tools/freepascal/units/i386-win32/*
+        run: |
+          for t in CheckReportsAvailableUpdateOnMainThread CheckReportsNoUpdate DownloadReportsProgressThenCompleted ErrorsAreDeliveredAsEvents SecondOperationWhileBusyRaises DownloadWithoutCheckRaises ApplyWithoutDownloadRaises DestroyWhileBusyIsSafe; do
+            echo "=== $t"
+            timeout 20 build/VelopackTests --all --format=plain --suite=TUpdaterTests.$t 2>&1 | grep -E "Number of (run|errors|failures)" || echo "HUNG or failed: $t"
+          done
+          exit 0
       - name: Build console example
         shell: msys2 {0}
         run: |
