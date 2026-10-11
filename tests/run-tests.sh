@@ -10,12 +10,12 @@ mkdir -p build/units
 # The stub gets the default library file name of the current platform, so the
 # binding finds it exactly like the real library.
 case "$(uname -s)" in
-  MINGW*|MSYS*|CYGWIN*) stub_name="velopack_libc.dll"; stub_flags="-static-libgcc" ;;
-  Darwin*)              stub_name="libvelopack_libc.dylib"; stub_flags="-fPIC" ;;
-  *)                    stub_name="libvelopack_libc.so"; stub_flags="-fPIC" ;;
+  MINGW*|MSYS*|CYGWIN*) stub_name="velopack_libc.dll"; stub_flags="-shared -static-libgcc" ;;
+  Darwin*)              stub_name="libvelopack_libc.dylib"; stub_flags="-dynamiclib -fPIC" ;;
+  *)                    stub_name="libvelopack_libc.so"; stub_flags="-shared -fPIC" ;;
 esac
 
-gcc -Wall -Wextra -shared $stub_flags -I third_party/velopack \
+gcc -Wall -Wextra $stub_flags -I third_party/velopack \
   -o "build/$stub_name" tests/stub/velopack_stub.c
 
 # FPC_OPTS: extra compiler options, e.g. unit paths when fpc.cfg is missing.
