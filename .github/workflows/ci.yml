@@ -172,3 +172,68 @@ jobs:
           echo "real library: $VELOPACK_REAL_LIB"
           ls -la "$VELOPACK_REAL_LIB"
           timeout 120 tests/run-tests.sh --suite=TRealLibraryTests
+
+  # EXPERIMENTAL: macOS. Free Pascal 3.2.2 has no official Apple Silicon
+  # compiler, so the matrix tries an Intel runner (native x86_64) and the ARM
+  # runner (Homebrew's fpc may run under Rosetta or not exist) to find out what
+  # works. Remove the entries that do not work once known.
+  macos:
+    name: FPC tests + real library (${{ matrix.label }}, experimental)
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15-intel
+            label: macOS Intel
+          - os: macos-latest
+            label: macOS ARM
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Free Pascal
+        run: |
+          export HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1
+          brew install fpc
+      - name: Show toolchain
+        run: |
+          uname -m
+          fpc -iV -iTP -iTO
+          cc --version | head -1
+      - name: Run tests
+        timeout-minutes: 10
+        # One suite at a time so a hang shows which suite it is.
+        run: |
+          status=0
+          for suite in TStringTests TNativeTests TManagerTests TAppTests TLogTests TUpdaterTests TCustomSourceTests; do
+            echo "=== $suite"
+            tests/run-tests.sh --suite=$suite || { echo "FAILED: $suite"; status=1; }
+          done
+          exit $status
+      - name: Build console example
+        run: |
+          mkdir -p build/units
+          fpc -Mdelphi -Fusrc -FUbuild/units -FEbuild examples/console/ConsoleDemo.lpr
+      - name: Read pinned Velopack revision
+        id: pin
+        run: echo "commit=$(sed -n 's/^commit=//p' third_party/velopack/VERSION)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          repository: velopack/velopack
+          ref: ${{ steps.pin.outputs.commit }}
+          path: velopack-src
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: velopack-src
+      - name: Build the native library
+        working-directory: velopack-src
+        run: |
+          cargo build --release -p velopack_libc
+          ls -la target/release/libvelopack_libc.dylib
+          file target/release/libvelopack_libc.dylib
+      - name: Tests against the real library
+        timeout-minutes: 10
+        env:
+          VELOPACK_REAL_LIB: ${{ github.workspace }}/velopack-src/target/release/libvelopack_libc.dylib
+        run: tests/run-tests.sh --suite=TRealLibraryTests
