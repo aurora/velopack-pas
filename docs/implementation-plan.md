@@ -6,27 +6,28 @@ Status legend: `[x]` done, `[ ]` open. Keep this file truthful.
 - [x] MIT license, `.gitignore`, `.editorconfig`
 - [x] Vendor `Velopack.h` as binding reference
 - [x] `AGENTS.md`, `CLAUDE.md`
-- [ ] Architecture doc, this plan, initial ADRs
-- [ ] `README.md`
+- [x] Architecture doc, this plan, initial ADRs
+- [x] `README.md`
 
 ## M1 - Native binding (layer 1) and support units
-- [ ] `Velopack.Compat.inc`
-- [ ] `Velopack.Strings`
-- [ ] `Velopack.Native`: all types and functions of `Velopack.h`, dynamic loading
-- [ ] C stub of the native library for tests (`tests/stub`)
-- [ ] `tests/run-tests.sh` and first FPCUnit tests (load / unload / missing library)
+- [x] `Velopack.Compat.inc`
+- [x] `Velopack.Strings`
+- [x] `Velopack.Native`: all types and functions of `Velopack.h`, dynamic loading
+- [x] C stub of the native library for tests (`tests/stub`)
+- [x] `tests/run-tests.sh` and first FPCUnit tests (load / unload / missing library)
 
 ## M2 - Object API (layer 3)
-- [ ] `Velopack.Types` (records, enums, `EVelopackError`)
-- [ ] `Velopack.App` (hooks, auto-apply, args override)
-- [ ] `Velopack.Manager`: sources (file, HTTP, GitHub, GitLab, Gitea, Flow),
+- [x] `Velopack.Types` (records, enums, `EVelopackError`)
+- [x] `Velopack.App` (hooks, auto-apply, args override)
+- [x] `Velopack.Manager`: sources (file, HTTP, GitHub, GitLab, Gitea, Flow),
       options, check / download / apply, pending-restart query
+      (custom callback sources are not wrapped yet, see M5)
 - [ ] Logger bridge (`vpkc_set_logger`)
-- [ ] Unit tests against the stub, including leak counting
+- [x] Unit tests against the stub, including leak counting
 
 ## M3 - Examples
-- [ ] Console example (`examples/console`)
-- [ ] Packaging script using `vpk` (`examples/console/pack.sh`)
+- [x] Console example (`examples/console`)
+- [x] Packaging script using `vpk` (`examples/console/pack.sh`, unverified)
 
 ## M4 - GUI integration (layer 4)
 - [ ] Non-visual component `TVelopackUpdater` (worker thread, main-thread events)

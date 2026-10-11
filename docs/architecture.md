@@ -28,11 +28,12 @@ Binding reference: `third_party/velopack/Velopack.h`
  +-----------------------------------------------------------+
  | 4. GUI component (optional)   Velopack.Updater.* packages |  LCL / VCL
  +-----------------------------------------------------------+
- | 3. Object API       Velopack.App, Velopack.Manager       |  no GUI deps
+ | 3. Object API       Velopack.App, Velopack.Manager        |  no GUI deps
  +-----------------------------------------------------------+
- | 2. Support          Velopack.Types, Velopack.Strings      |  no GUI deps
+ | 2. Native binding   Velopack.Native, Velopack.Internal    |  no GUI deps
  +-----------------------------------------------------------+
- | 1. Native binding   Velopack.Native (dynamic loading)     |  no GUI deps
+ | 1. Foundation   Velopack.Compat.inc, Velopack.Strings,    |  no deps
+ |                 Velopack.Types                            |
  +-----------------------------------------------------------+
  | Velopack native library (Rust, C ABI)                     |
  +-----------------------------------------------------------+
@@ -43,10 +44,11 @@ Dependency rule: a layer may only use layers below it.
 | Unit | Responsibility |
 |------|----------------|
 | `Velopack.Compat.inc` | Compiler / platform conditionals shared by all units |
-| `Velopack.Strings` | UTF-8 conversion helpers, the only place that touches `PAnsiChar` <-> `string` |
+| `Velopack.Strings` | UTF-8 conversion helpers, the only place that converts `string` <-> C strings (ADR 0007) |
+| `Velopack.Types` | Public records, enums, event types and the `EVelopackError` hierarchy |
 | `Velopack.Native` | 1:1 translation of `Velopack.h`, loads the library, resolves exports |
-| `Velopack.Types` | Public records, enums and the `EVelopackError` exception |
-| `Velopack.App` | `TVelopackApp`: startup hooks (`vpkc_app_*`), must run first in `main` |
+| `Velopack.Internal` | Not public API: native <-> Pascal conversion helpers |
+| `Velopack.App` | `TVelopackApp`: startup hooks, must run first in `main` |
 | `Velopack.Manager` | `TUpdateManager`, `TUpdateSource`, `TUpdateInfo` |
 
 ## Key design points
@@ -62,15 +64,19 @@ Dependency rule: a layer may only use layers below it.
 - **Value semantics for assets**: `TVelopackAsset` is a record of managed
   strings. Native `vpkc_asset_t` structures are copied and freed immediately,
   so users never deal with native memory.
+- **Booleans**: C `bool` maps to Pascal `Boolean`, never `ByteBool`
+  (`True` would be 255, undefined behavior in C/Rust).
 - **Errors become exceptions**: native failures are raised as `EVelopackError`
   carrying the message from `vpkc_get_last_error`.
 
 ## Startup contract
 
-`TVelopackApp.Build.Run` must be called as the very first statement of the
+`TVelopackApp.Run` must be called as the very first statement of the
 program (before the GUI framework is initialized). Velopack invokes the
 application with special arguments during install, update and uninstall and
 expects the process to exit quickly; `Run` handles this and may not return.
+If the native library is missing, `Run` returns `False` and the application
+continues without update support.
 
 ## Out of scope (for now)
 
