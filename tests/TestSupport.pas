@@ -19,6 +19,10 @@ procedure UseStubLibrary;
 { Number of native objects currently alive in the stub (leak detection). }
 function StubLiveObjects: Integer;
 
+{ Hex dump of the raw bytes of a string, for encoding-independent comparisons
+  (comparing UTF8String with a literal converts code pages in FPC). }
+function HexOf(const S: RawByteString): string;
+
 { Resolves a test-only export of the stub, raises if it is missing. }
 function StubProc(const AName: string): Pointer;
 
@@ -29,6 +33,15 @@ uses
 
 var
   GStub: TLibHandle = 0;
+
+function HexOf(const S: RawByteString): string;
+var
+  I: Integer;
+begin
+  Result := '';
+  for I := 1 to Length(S) do
+    Result := Result + IntToHex(Ord(S[I]), 2);
+end;
 
 function StubLibraryPath: string;
 begin
