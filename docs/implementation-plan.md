@@ -46,14 +46,17 @@ Status legend: `[x]` done, `[ ]` open. Keep this file truthful.
 - [x] Real library on Windows (32-bit `velopack_libc.dll`, built in CI from the
       pinned revision with `i686-pc-windows-msvc` + static CRT): load, exports,
       error path, locator, and the custom-source check/download/checksum cycle
+- [x] macOS Intel (x86_64) and Apple Silicon (arm64) in CI: Homebrew's fpc 3.2.2
+      builds natively on both, the real `libvelopack_libc.dylib` is built from
+      the pinned revision, and the stub suites plus all real-library tests pass
 - [ ] Windows 64-bit (needs a 64-bit Free Pascal on the runner; the choco
-      package is 32-bit only) and macOS
+      package is 32-bit only)
 - [ ] End-to-end update cycle with an installed app and a `vpk`-built feed
       (the real-library tests already cover check and download outside an
       installation, using `TVelopackLocator` and a custom source)
 - [x] CI: FPC tests, console example, Lazarus package and LCL example on
       GitHub Actions (`.github/workflows/ci.yml`; Linux jobs required, Windows
-      job experimental/`continue-on-error`, macOS still to do)
+      Windows and macOS jobs experimental/`continue-on-error`)
 - [x] Custom update source via callbacks (`Velopack.CustomSource`); tested against
       the stub and, in CI, end to end against the real library (feed, download,
       checksum verification)
@@ -70,4 +73,4 @@ Status legend: `[x]` done, `[ ]` open. Keep this file truthful.
    `velopack_libc_win_{x86,x64,arm64}_msvc.dll`, `velopack_libc_linux_*_gnu.so`
    and `velopack_libc_osx.dylib`; whether these are attached to public releases
    still has to be checked.
-2. **macOS / Delphi non-Windows targets.** Supported by the design, untested.
+2. **Delphi on non-Windows targets.** Supported by the design, untested.
