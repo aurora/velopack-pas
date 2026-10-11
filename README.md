@@ -8,8 +8,9 @@ applications.
 
 > **Status: early.** The binding and object API are implemented. Tests run
 > against a stub of the native library and, in CI, smoke tests against the real
-> Velopack library on Linux. A full update cycle (installed app, real feed),
-> Windows/macOS and Delphi are **not** verified yet. See
+> Velopack library on Linux and Windows (32-bit). A full update cycle
+> (installed app, `vpk`-built feed), Windows 64-bit, macOS and Delphi are
+> **not** verified yet. See
 > [docs/implementation-plan.md](docs/implementation-plan.md).
 
 ## How it works
@@ -80,7 +81,7 @@ Free Pascal programs on Unix must link `cthreads` (Lazarus does this for you).
 | Compiler | Status |
 |----------|--------|
 | Free Pascal 3.2.2, Linux | built and tested (also Lazarus 3.0 / LCL gtk2 build) |
-| Free Pascal 3.2.2, Windows 32-bit | tests pass in CI against the stub (experimental job) |
+| Free Pascal 3.2.2, Windows 32-bit | tests pass in CI against the stub and the real library (experimental job) |
 | Free Pascal, Windows 64-bit / macOS | expected to work, untested |
 | Delphi 10.4+ | designed for, **untested** |
 

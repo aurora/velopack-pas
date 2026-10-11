@@ -43,7 +43,11 @@ Status legend: `[x]` done, `[ ]` open. Keep this file truthful.
       error path, `TVelopackApp.Run`); built from the pinned revision in CI
 - [x] Windows 32-bit (FPC 3.2.2 + MinGW stub) in CI against the C stub; found
       and fixed a thread-lifetime bug in `TVelopackUpdater` (see architecture)
-- [ ] Windows 64-bit and the real library on Windows; macOS
+- [x] Real library on Windows (32-bit `velopack_libc.dll`, built in CI from the
+      pinned revision with `i686-pc-windows-msvc` + static CRT): load, exports,
+      error path, locator, and the custom-source check/download/checksum cycle
+- [ ] Windows 64-bit (needs a 64-bit Free Pascal on the runner; the choco
+      package is 32-bit only) and macOS
 - [ ] End-to-end update cycle with an installed app and a `vpk`-built feed
       (the real-library tests already cover check and download outside an
       installation, using `TVelopackLocator` and a custom source)
@@ -62,4 +66,8 @@ Status legend: `[x]` done, `[ ]` open. Keep this file truthful.
    (`cargo build --release -p velopack_libc`) at the revision pinned in
    `third_party/velopack/VERSION`. Decide whether to publish prebuilt binaries
    with our releases.
+   Lead: upstream's release workflow (`.github/workflows/build-rust.yml`) builds
+   `velopack_libc_win_{x86,x64,arm64}_msvc.dll`, `velopack_libc_linux_*_gnu.so`
+   and `velopack_libc_osx.dylib`; whether these are attached to public releases
+   still has to be checked.
 2. **macOS / Delphi non-Windows targets.** Supported by the design, untested.
