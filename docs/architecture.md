@@ -50,6 +50,7 @@ Dependency rule: a layer may only use layers below it.
 | `Velopack.Internal` | Not public API: native <-> Pascal conversion helpers |
 | `Velopack.App` | `TVelopackApp`: startup hooks, must run first in `main` |
 | `Velopack.Manager` | `TUpdateManager`, `TUpdateSource`, `TUpdateInfo` |
+| `Velopack.CustomSource` | `TCustomUpdateSource`: update sources implemented in Pascal (feed + download callbacks) |
 | `Velopack.Log` | Bridge for native log messages |
 | `Velopack.Updater` | `TVelopackUpdater`: asynchronous component, events on the main thread; RTL only |
 | `packages/Velopack.Reg` | Palette registration, shared by the Lazarus and Delphi packages |
@@ -86,6 +87,19 @@ threads are retired and freed later; `Destroy` sets a flag first so a re-entrant
 failure modes were found by the Windows CI job and are covered by tests
 (`DestroyWhileBusyIsSafe`, `DestroyWithUndeliveredResultDoesNotLeak`).
 
+## Custom update sources
+
+`TCustomUpdateSource` (events or overridable methods) lets an application serve
+the release feed and the package download itself. The native library receives a
+pointer to a small context object instead of the source, so freeing the source
+before the manager makes the callbacks fail cleanly instead of crashing. Behavior
+of the real library that the design and tests rely on (read from its source and
+confirmed by tests): the feed is requested as `releases.<channel>.json`; `NULL`
+from the feed callback is an error; the feed callback runs on the calling thread,
+the download callback on a thread created by the library; progress 0 and 100 are
+sent by the library, and progress of very fast downloads may not be delivered at
+all because the library polls every 50 ms and stops when the download is done.
+
 ## Startup contract
 
 `TVelopackApp.Run` must be called as the very first statement of the
@@ -98,4 +112,3 @@ continues without update support.
 ## Out of scope (for now)
 
 - Packaging: use the `vpk` CLI. We provide example scripts only.
-- Custom update sources via callbacks (planned, see implementation plan).

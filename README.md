@@ -49,6 +49,14 @@ begin
 end.
 ```
 
+### Custom update sources
+
+When releases are not on a plain HTTP server, a directory or a supported forge,
+serve them yourself: `Velopack.CustomSource.TCustomUpdateSource` takes a feed
+provider and a download handler (events or overridden methods); Velopack does
+the rest. Keep the source alive as long as a manager uses it. Details and
+threading notes are in the unit header.
+
 ### GUI applications
 
 `TVelopackUpdater` runs the blocking calls on a worker thread and raises its

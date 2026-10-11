@@ -21,7 +21,6 @@ Status legend: `[x]` done, `[ ]` open. Keep this file truthful.
 - [x] `Velopack.App` (hooks, auto-apply, args override)
 - [x] `Velopack.Manager`: sources (file, HTTP, GitHub, GitLab, Gitea, Flow),
       options, check / download / apply, pending-restart query
-      (custom callback sources are not wrapped yet, see M5)
 - [x] Logger bridge (`Velopack.Log`, `vpkc_set_logger`)
 - [x] Unit tests against the stub, including leak counting
 
@@ -46,10 +45,14 @@ Status legend: `[x]` done, `[ ]` open. Keep this file truthful.
       and fixed a thread-lifetime bug in `TVelopackUpdater` (see architecture)
 - [ ] Windows 64-bit and the real library on Windows; macOS
 - [ ] End-to-end update cycle with an installed app and a `vpk`-built feed
+      (the real-library tests already cover check and download outside an
+      installation, using `TVelopackLocator` and a custom source)
 - [x] CI: FPC tests, console example, Lazarus package and LCL example on
       GitHub Actions (`.github/workflows/ci.yml`; Linux jobs required, Windows
       job experimental/`continue-on-error`, macOS still to do)
-- [ ] Custom update source via callbacks (`vpkc_new_source_custom_callback`)
+- [x] Custom update source via callbacks (`Velopack.CustomSource`); tested against
+      the stub and, in CI, end to end against the real library (feed, download,
+      checksum verification)
 - [ ] Lazarus Online Package Manager metadata, release tagging
 
 ## Open questions
