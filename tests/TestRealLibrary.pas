@@ -27,12 +27,13 @@ type
     procedure ManagerOutsideInstallationRaisesNativeError;
     procedure AppRunReturnsForNormalStart;
     procedure SourcesCanBeCreatedAndFreed;
+    procedure ManagerWithLocatorReadsTheManifest;
   end;
 
 implementation
 
 uses
-  Velopack.Native, Velopack.Types, Velopack.App, Velopack.Manager;
+  Classes, Velopack.Native, Velopack.Types, Velopack.App, Velopack.Manager;
 
 const
   ENV_REAL_LIB = 'VELOPACK_REAL_LIB';
@@ -78,6 +79,42 @@ begin
   TUpdateSource.FromFile(GetTempDir).Free;
   TUpdateSource.FromHttpUrl('https://example.invalid/releases').Free;
   TUpdateSource.FromGitHub('https://github.com/velopack/velopack').Free;
+end;
+
+{ A throw-away "installation": the manifest fixture plus empty directories. }
+function MakeTestLocator: TVelopackLocator;
+var
+  Root: string;
+begin
+  Root := IncludeTrailingPathDelimiter(GetTempDir) + 'vpkpas-' + IntToStr(Random(1000000));
+  ForceDirectories(Root + PathDelim + 'packages');
+  ForceDirectories(Root + PathDelim + 'current');
+  Result.RootAppDir := Root;
+  Result.UpdateExePath := Root + PathDelim + 'Update.exe';
+  Result.PackagesDir := Root + PathDelim + 'packages';
+  Result.CurrentBinaryDir := Root + PathDelim + 'current';
+  Result.ManifestPath := ExpandFileName('tests/fixtures/VpkPasTestApp.nuspec');
+  Result.IsPortable := True;
+  with TStringList.Create do
+  try
+    SaveToFile(Result.UpdateExePath);
+  finally
+    Free;
+  end;
+end;
+
+procedure TRealLibraryTests.ManagerWithLocatorReadsTheManifest;
+var
+  M: TUpdateManager;
+begin
+  M := TUpdateManager.Create(GetTempDir, DefaultUpdateOptions, MakeTestLocator);
+  try
+    CheckEquals('VpkPasTestApp', M.AppId);
+    CheckEquals('1.0.0', M.CurrentVersion);
+    CheckTrue(M.IsPortable);
+  finally
+    M.Free;
+  end;
 end;
 
 initialization

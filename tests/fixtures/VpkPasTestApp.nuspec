@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+<metadata>
+<id>VpkPasTestApp</id>
+<title>velopack-pas test app</title>
+<description>Manifest used by the tests of velopack-pas</description>
+<authors>velopack-pas</authors>
+<version>1.0.0</version>
+<channel>stable</channel>
+<mainExe>testapp.exe</mainExe>
+<os>win</os>
+<rid>win-x64</rid>
+<osMinVersion>10.0.19043</osMinVersion>
+<machineArchitecture>x64</machineArchitecture>
+</metadata>
+</package>

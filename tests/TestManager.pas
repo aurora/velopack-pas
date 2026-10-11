@@ -28,6 +28,8 @@ type
     procedure PendingRestartReturnsAsset;
     procedure PendingRestartReturnsFalseWhenNone;
     procedure ManagerWithSourceWorks;
+    procedure LocatorIsPassedToTheNativeLibrary;
+    procedure NoLocatorIsPassedByDefault;
     procedure NothingLeaksAfterFullCycle;
   end;
 
@@ -261,6 +263,35 @@ begin
   end;
   try
     CheckEquals('1.2.3', M.CurrentVersion);
+  finally
+    M.Free;
+  end;
+end;
+
+procedure TManagerTests.LocatorIsPassedToTheNativeLibrary;
+var
+  L: TVelopackLocator;
+  M: TUpdateManager;
+begin
+  L := Default(TVelopackLocator);
+  L.RootAppDir := '/tmp/vpk-root';
+  L.IsPortable := True;
+  M := TUpdateManager.Create('http://example.invalid', DefaultUpdateOptions, L);
+  try
+    CheckEquals('/tmp/vpk-root', string(TCStrFn(StubProc('vpkc_stub_locator_root'))()));
+    CheckEquals(1, TIntFn(StubProc('vpkc_stub_locator_portable'))(), 'IsPortable must be exactly 1');
+  finally
+    M.Free;
+  end;
+end;
+
+procedure TManagerTests.NoLocatorIsPassedByDefault;
+var
+  M: TUpdateManager;
+begin
+  M := TUpdateManager.Create('http://example.invalid');
+  try
+    CheckEquals(-1, TIntFn(StubProc('vpkc_stub_locator_portable'))(), 'nil expected');
   finally
     M.Free;
   end;

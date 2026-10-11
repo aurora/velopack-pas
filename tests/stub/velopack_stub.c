@@ -31,6 +31,8 @@ static int g_apply_silent = -1, g_apply_restart = -1;
 static size_t g_apply_argc = 0;
 static char g_apply_arg0[128] = "";
 static int g_auto_apply = 1;
+static char g_loc_root[256] = "";
+static int g_loc_portable = -1; /* -1: no locator passed */
 static vpkc_hook_callback_t g_hook_first_run = NULL;
 static vpkc_hook_callback_t g_hook_after_install = NULL;
 static vpkc_log_callback_t g_log_cb = NULL;
@@ -84,6 +86,16 @@ void vpkc_source_report_progress(size_t id, int16_t p) { (void)id; (void)p; }
 void vpkc_free_source(vpkc_update_source_t *s) { if (s) { free(s); g_live--; } }
 
 /* ---- update manager ---- */
+static void record_locator(struct vpkc_locator_config_t *l) {
+  if (l) {
+    snprintf(g_loc_root, sizeof g_loc_root, "%s", l->RootAppDir ? l->RootAppDir : "");
+    g_loc_portable = l->IsPortable ? 1 : 0;
+  } else {
+    g_loc_root[0] = 0;
+    g_loc_portable = -1;
+  }
+}
+
 static bool make_manager(const char *url, vpkc_update_manager_t **out) {
   stub_manager_t *m;
   if (strcmp(url, "fail") == 0) { set_error("stub: cannot create manager"); return false; }
@@ -94,9 +106,9 @@ static bool make_manager(const char *url, vpkc_update_manager_t **out) {
   return true;
 }
 
-bool vpkc_new_update_manager(const char *u, struct vpkc_update_options_t *o, struct vpkc_locator_config_t *l, vpkc_update_manager_t **m) { (void)o; (void)l; return make_manager(u, m); }
+bool vpkc_new_update_manager(const char *u, struct vpkc_update_options_t *o, struct vpkc_locator_config_t *l, vpkc_update_manager_t **m) { (void)o; record_locator(l); return make_manager(u, m); }
 bool vpkc_new_update_manager_flow(struct vpkc_update_options_t *o, struct vpkc_locator_config_t *l, vpkc_update_manager_t **m) { (void)o; (void)l; return make_manager("flow", m); }
-bool vpkc_new_update_manager_with_source(vpkc_update_source_t *s, struct vpkc_update_options_t *o, struct vpkc_locator_config_t *l, vpkc_update_manager_t **m) { (void)s; (void)o; (void)l; return make_manager("source", m); }
+bool vpkc_new_update_manager_with_source(vpkc_update_source_t *s, struct vpkc_update_options_t *o, struct vpkc_locator_config_t *l, vpkc_update_manager_t **m) { (void)s; (void)o; record_locator(l); return make_manager("source", m); }
 
 static size_t put(const char *s, char *buf, size_t c) {
   size_t need = strlen(s) + 1;
@@ -186,6 +198,8 @@ void vpkc_set_logger(vpkc_log_callback_t cb, void *ud) { g_log_cb = cb; g_log_ud
 
 /* ---- test-only exports ---- */
 STUB_API int vpkc_stub_live_objects(void) { return g_live; }
+STUB_API const char *vpkc_stub_locator_root(void) { return g_loc_root; }
+STUB_API int vpkc_stub_locator_portable(void) { return g_loc_portable; }
 STUB_API int vpkc_stub_auto_apply(void) { return g_auto_apply; }
 STUB_API const char *vpkc_stub_apply_version(void) { return g_apply_version; }
 STUB_API int vpkc_stub_apply_silent(void) { return g_apply_silent; }
