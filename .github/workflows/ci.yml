@@ -83,12 +83,14 @@ jobs:
   # the test program and the C stub have the same architecture.
   # Passed once its toolchain problems were sorted out; keep continue-on-error
   # until it has proven stable (the FPC/choco install is slow and can flake).
-  # Not covered yet: 64-bit, real library, Lazarus package / LCL example.
+  # The real library is built as 32-bit (i686-pc-windows-msvc) to match the
+  # 32-bit FPC; a 64-bit FPC would allow testing the 64-bit DLL as well.
+  # Not covered yet: 64-bit, Lazarus package / LCL example.
   windows:
-    name: FPC tests (Windows 32-bit, experimental)
+    name: FPC tests + real library (Windows 32-bit, experimental)
     runs-on: windows-latest
     continue-on-error: true
-    timeout-minutes: 25
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - name: Install Free Pascal
@@ -136,3 +138,36 @@ jobs:
         run: |
           mkdir -p build/units
           fpc -Mdelphi -Fusrc -FUbuild/units -FEbuild examples/console/ConsoleDemo.lpr
+      - name: Read pinned Velopack revision
+        id: pin
+        shell: bash
+        run: echo "commit=$(sed -n 's/^commit=//p' third_party/velopack/VERSION)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          repository: velopack/velopack
+          ref: ${{ steps.pin.outputs.commit }}
+          path: velopack-src
+      - name: Add the 32-bit Rust target
+        shell: pwsh
+        run: rustup target add i686-pc-windows-msvc
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: velopack-src
+      - name: Build the native library (32-bit)
+        shell: pwsh
+        working-directory: velopack-src
+        env:
+          # Same as upstream's release build: no dependency on the VC runtime DLL.
+          RUSTFLAGS: -C target-feature=+crt-static
+        run: |
+          cargo build --release -p velopack_libc --target i686-pc-windows-msvc
+          Get-Item target\i686-pc-windows-msvc\release\velopack_libc.dll | Format-List FullName, Length
+      - name: Tests against the real library
+        shell: msys2 {0}
+        env:
+          FPC_OPTS: -FuC:/tools/freepascal/units/i386-win32/*
+          # Forward slashes: the path goes through MSYS into a native program.
+          VELOPACK_REAL_LIB: ${{ replace(github.workspace, '\', '/') }}/velopack-src/target/i686-pc-windows-msvc/release/velopack_libc.dll
+        run: |
+          echo "real library: $VELOPACK_REAL_LIB"
+          timeout 120 tests/run-tests.sh --suite=TRealLibraryTests
