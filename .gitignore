@@ -1,0 +1,34 @@
+# Compiler output
+*.o
+*.ppu
+*.a
+*.rsj
+*.compiled
+*.dcu
+*.dcp
+*.bpl
+*.map
+*.drc
+*.res
+lib/
+backup/
+__history/
+__recovery/
+
+# Binaries produced by examples and tests
+/build/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# IDE local state
+*.lps
+*.local
+*.identcache
+*.dsk
+*.stat
+*.~*
+
+# Velopack packaging output
+Releases/
