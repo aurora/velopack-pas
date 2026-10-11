@@ -78,37 +78,33 @@ jobs:
 
   # EXPERIMENTAL: Windows is where Velopack installs and updates apps, but this
   # job has not been proven yet. It must not fail the whole workflow until it
-  # is stable (then remove continue-on-error).
+  # is stable (then remove continue-on-error). Uses MSYS2 so that the Free Pascal
+  # compiler and the C compiler for the test stub are both 64-bit.
+  # Not covered yet: Lazarus package / LCL example on Windows.
   windows:
-    name: Tests and Lazarus build (Windows, experimental)
+    name: FPC tests (Windows, experimental)
     runs-on: windows-latest
     continue-on-error: true
+    timeout-minutes: 20
     defaults:
       run:
-        shell: bash
+        shell: msys2 {0}
     steps:
       - uses: actions/checkout@v4
-      - name: Install Lazarus (includes the 64-bit Free Pascal compiler)
-        shell: pwsh
-        run: |
-          choco install lazarus -y --no-progress
-          Get-ChildItem C:\lazarus\fpc -Directory | ForEach-Object { $_.FullName }
-      - name: Put compilers on PATH
-        shell: pwsh
-        run: |
-          $fpc = Get-ChildItem C:\lazarus\fpc -Directory | Select-Object -First 1
-          "C:\lazarus" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          "$($fpc.FullName)\bin\x86_64-win64" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: false
+          install: >-
+            mingw-w64-x86_64-fpc
+            mingw-w64-x86_64-gcc
       - name: Show toolchain
         run: |
           fpc -iV -iTP -iTO
           gcc --version | head -1
       - name: Run tests
         run: tests/run-tests.sh
-      - name: Build Lazarus package
-        run: lazbuild packages/lazarus/velopack_pas.lpk
-      - name: Build console and LCL examples
+      - name: Build console example
         run: |
           mkdir -p build/units
           fpc -Mdelphi -Fusrc -FUbuild/units -FEbuild examples/console/ConsoleDemo.lpr
-          lazbuild examples/lcl/UpdaterDemo.lpi
