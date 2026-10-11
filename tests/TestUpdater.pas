@@ -32,6 +32,7 @@ type
     procedure DownloadWithoutCheckRaises;
     procedure ApplyWithoutDownloadRaises;
     procedure DestroyWhileBusyIsSafe;
+    procedure DestroyWithUndeliveredResultDoesNotLeak;
   end;
 
 implementation
@@ -181,6 +182,20 @@ begin
   FUpdater.CheckForUpdates;
   FreeAndNil(FUpdater); // joins the worker and drops queued events
   CheckSynchronize(0);  // must not touch the freed component
+  CheckEquals(FLiveBefore, StubLiveObjects,
+    'update info of an undelivered check result leaked');
+end;
+
+procedure TUpdaterTests.DestroyWithUndeliveredResultDoesNotLeak;
+begin
+  FUpdater.UpdateUrl := 'http://example.invalid';
+  FUpdater.CheckForUpdates;
+  // Let the worker finish while nobody pumps the main-thread queue, so its
+  // result (which owns native update info) is still undelivered at Destroy.
+  Sleep(500);
+  FreeAndNil(FUpdater);
+  CheckEquals(FLiveBefore, StubLiveObjects,
+    'undelivered check result leaked its update info');
 end;
 
 initialization
