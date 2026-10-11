@@ -39,7 +39,9 @@ Status legend: `[x]` done, `[ ]` open. Keep this file truthful.
 ## M5 - Quality and release
 - [ ] Verify real native library name per platform (see Open questions)
 - [ ] Test against the real Velopack library on Windows and Linux
-- [ ] CI: FPC build + tests on GitHub Actions
+- [x] CI: FPC tests, console example, Lazarus package and LCL example on
+      GitHub Actions (`.github/workflows/ci.yml`, Linux only; Windows/macOS jobs
+      still to do)
 - [ ] Custom update source via callbacks (`vpkc_new_source_custom_callback`)
 - [ ] Lazarus Online Package Manager metadata, release tagging
 

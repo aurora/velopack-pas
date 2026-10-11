@@ -1,5 +1,7 @@
 # velopack-pas
 
+[![CI](https://github.com/aurora/velopack-pas/actions/workflows/ci.yml/badge.svg)](https://github.com/aurora/velopack-pas/actions/workflows/ci.yml)
+
 Free Pascal / Lazarus and Delphi bindings for [Velopack](https://velopack.io),
 the installer and auto-update framework. Works in console and GUI
 applications.
