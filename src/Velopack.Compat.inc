@@ -30,3 +30,13 @@
   {$IFDEF MACOS}{$DEFINE VPK_MACOS}{$ENDIF}
   {$IFDEF LINUX}{$DEFINE VPK_LINUX}{$ENDIF}
 {$ENDIF}
+
+// String encoding policy (see docs/adr/0007-string-encoding.md).
+// Free Pascal on Unix-like systems: "string" is treated as UTF-8, as in
+// Lazarus. The RTL's default code page conversion is not reliable there
+// unless the application links the cwstring unit.
+{$IFDEF FPC}
+  {$IFNDEF VPK_WINDOWS}
+    {$DEFINE VPK_STRING_IS_UTF8}
+  {$ENDIF}
+{$ENDIF}
