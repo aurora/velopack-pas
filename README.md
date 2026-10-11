@@ -46,13 +46,29 @@ begin
 end.
 ```
 
-A complete example is in [examples/console](examples/console).
+### GUI applications
+
+`TVelopackUpdater` runs the blocking calls on a worker thread and raises its
+events on the main thread; it works with LCL, VCL, FMX and console programs.
+
+```pascal
+Updater.UpdateUrl := 'https://example.com/releases';
+Updater.OnCheckCompleted := HandleCheck;   // then call Updater.DownloadUpdates
+Updater.OnDownloadProgress := HandleProgress;
+Updater.OnDownloadCompleted := HandleDownloaded; // Updater.ApplyUpdatesAndRestart; Close;
+Updater.CheckForUpdates;
+```
+
+Install the Lazarus package `packages/lazarus/velopack_pas.lpk` (or the Delphi
+package `packages/delphi/Velopack.dpk`) to get the component on the palette.
+Examples: [console](examples/console), [LCL](examples/lcl), [VCL](examples/vcl).
+Free Pascal programs on Unix must link `cthreads` (Lazarus does this for you).
 
 ## Compiler support
 
 | Compiler | Status |
 |----------|--------|
-| Free Pascal 3.2.2, Linux | built and tested |
+| Free Pascal 3.2.2, Linux | built and tested (also Lazarus 3.0 / LCL gtk2 build) |
 | Free Pascal, Windows / macOS | expected to work, untested |
 | Delphi 10.4+ | designed for, **untested** |
 

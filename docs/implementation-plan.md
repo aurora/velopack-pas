@@ -30,10 +30,11 @@ Status legend: `[x]` done, `[ ]` open. Keep this file truthful.
 - [x] Packaging script using `vpk` (`examples/console/pack.sh`, unverified)
 
 ## M4 - GUI integration (layer 4)
-- [ ] Non-visual component `TVelopackUpdater` (worker thread, main-thread events)
-- [ ] Lazarus package `packages/lazarus/velopack.lpk` + LCL example
-- [ ] Delphi package `packages/delphi/Velopack.dpk` + VCL example
-      (cannot be verified in cloud sessions; needs maintainer testing)
+- [x] Non-visual component `TVelopackUpdater` (worker thread, main-thread events)
+- [x] Lazarus package `packages/lazarus/velopack_pas.lpk` + LCL example
+      (built with lazbuild 3.0; example starts under Xvfb, UI interaction not exercised)
+- [x] Delphi package `packages/delphi/Velopack.dpk` + VCL example written,
+      **unverified** (needs maintainer testing with Delphi)
 
 ## M5 - Quality and release
 - [ ] Verify real native library name per platform (see Open questions)

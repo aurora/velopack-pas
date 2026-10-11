@@ -26,9 +26,9 @@ Binding reference: `third_party/velopack/Velopack.h`
 
 ```
  +-----------------------------------------------------------+
- | 4. GUI component (optional)   Velopack.Updater.* packages |  LCL / VCL
+ | 4. Component        Velopack.Updater (RTL only, ADR 0008) |  threads
  +-----------------------------------------------------------+
- | 3. Object API       Velopack.App, Velopack.Manager        |  no GUI deps
+ | 3. Object API       Velopack.App, .Manager, .Log          |  no GUI deps
  +-----------------------------------------------------------+
  | 2. Native binding   Velopack.Native, Velopack.Internal    |  no GUI deps
  +-----------------------------------------------------------+
@@ -51,6 +51,8 @@ Dependency rule: a layer may only use layers below it.
 | `Velopack.App` | `TVelopackApp`: startup hooks, must run first in `main` |
 | `Velopack.Manager` | `TUpdateManager`, `TUpdateSource`, `TUpdateInfo` |
 | `Velopack.Log` | Bridge for native log messages |
+| `Velopack.Updater` | `TVelopackUpdater`: asynchronous component, events on the main thread; RTL only |
+| `packages/Velopack.Reg` | Palette registration, shared by the Lazarus and Delphi packages |
 
 ## Key design points
 
@@ -59,9 +61,12 @@ Dependency rule: a layer may only use layers below it.
   supplied explicitly or through the `VELOPACK_LIBRARY` environment variable.
 - **One source base for FPC and Delphi** (ADR 0005): `{$mode delphi}` on FPC,
   conditionals centralized in `Velopack.Compat.inc`.
-- **No threads in the core** (ADR 0006): blocking calls stay blocking; the GUI
-  component runs them in a worker thread and marshals events to the main
-  thread.
+- **No threads in the core** (ADR 0006): blocking calls stay blocking;
+  `TVelopackUpdater` runs them in a worker thread and marshals events to the
+  main thread with `TThread.Queue`.
+- **One component for every toolkit** (ADR 0008): `TVelopackUpdater` needs only
+  the RTL, so LCL, VCL, FMX and console programs share it. The IDE packages
+  (`packages/lazarus`, `packages/delphi`) only add registration.
 - **Value semantics for assets**: `TVelopackAsset` is a record of managed
   strings. Native `vpkc_asset_t` structures are copied and freed immediately,
   so users never deal with native memory.

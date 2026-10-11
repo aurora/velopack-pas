@@ -21,10 +21,11 @@ Velopack library is loaded dynamically at run time. See `docs/architecture.md`.
 
 ### Modular design
 - Keep the layers strictly separated (see `docs/architecture.md`):
-  `Native` -> `Types/Strings` -> `App/Manager` -> optional GUI component.
+  Foundation (`Compat`, `Strings`, `Types`) -> `Native` -> `App` / `Manager` /
+  `Log` -> `Updater` component -> IDE packages.
 - A lower layer must never `uses` a higher one.
-- Layers 1 and 2 must **not** depend on LCL, VCL or FMX. GUI code lives only
-  in the component packages.
+- No unit in `src/` may depend on LCL, VCL or FMX (ADR 0008). GUI code lives
+  only in `examples/`; packages contain registration code only.
 - One unit = one responsibility. Prefer a new small unit over growing an
   existing one beyond ~500 lines.
 - Public API stays small. Everything not meant for users goes into the
