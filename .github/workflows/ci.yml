@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, "claude/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Library units + FPCUnit suite against the C stub of the native library.
+  test:
+    name: FPC tests (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Free Pascal and a C compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fpc gcc
+      - name: Run tests
+        run: tests/run-tests.sh
+      - name: Build console example
+        run: |
+          fpc -Mdelphi -Fusrc -FUbuild/units -FEbuild examples/console/ConsoleDemo.lpr
+
+  # Lazarus package and the LCL example (compile only, no display needed).
+  lazarus:
+    name: Lazarus package and LCL example
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lazarus
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fpc lazarus-ide-gtk2 lcl-nogui lcl-units
+      - name: Build package
+        run: lazbuild packages/lazarus/velopack_pas.lpk
+      - name: Build LCL example
+        run: lazbuild examples/lcl/UpdaterDemo.lpi
