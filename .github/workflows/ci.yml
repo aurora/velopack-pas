@@ -119,7 +119,16 @@ jobs:
         # The choco FPC finds the RTL but not the FCL units (no fpc.cfg).
         env:
           FPC_OPTS: -FuC:/tools/freepascal/units/i386-win32/*
-        run: tests/run-tests.sh
+        # One suite at a time with a timeout: the whole run hung once on
+        # Windows and the runner prints nothing until the end, so this shows
+        # which suite is the culprit.
+        run: |
+          status=0
+          for suite in TStringTests TNativeTests TManagerTests TAppTests TLogTests TUpdaterTests; do
+            echo "=== $suite"
+            timeout 60 tests/run-tests.sh --suite=$suite || { echo "FAILED or timed out: $suite (exit $?)"; status=1; }
+          done
+          exit $status
       - name: Build console example
         shell: msys2 {0}
         run: |
