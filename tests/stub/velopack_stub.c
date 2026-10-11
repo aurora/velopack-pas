@@ -38,7 +38,15 @@ static vpkc_hook_callback_t g_hook_after_install = NULL;
 static vpkc_log_callback_t g_log_cb = NULL;
 static void *g_log_ud = NULL;
 
-typedef struct { char url[256]; } stub_manager_t;
+typedef struct {
+  int custom;
+  vpkc_release_feed_delegate_t feed;
+  vpkc_free_release_feed_t free_feed;
+  vpkc_download_asset_delegate_t download;
+  void *user_data;
+} stub_source_t;
+
+typedef struct { char url[256]; stub_source_t src; } stub_manager_t;
 
 static char *dup(const char *s) {
   size_t n = strlen(s) + 1;
@@ -71,8 +79,22 @@ static void free_asset_fields(vpkc_asset_t *a) {
   free(a->SHA1); free(a->SHA256); free(a->NotesMarkdown); free(a->NotesHtml);
 }
 
-/* ---- sources: opaque tokens, only counted ---- */
-static void *new_source(void) { g_live++; return malloc(1); }
+/* ---- sources ----
+ * Plain sources are opaque tokens that are only counted. Custom callback
+ * sources keep the callbacks; the stub calls them like the real library does
+ * (see src/lib-cpp/src/csource.rs): releases.<channel>.json for the feed,
+ * a NULL feed is an error, progress 0 and 100 are sent by the library itself,
+ * and the progress id is only valid while the download callback runs. */
+static char g_last_feed_name[128] = "";
+static char g_last_feed[2048] = "";
+static vpkc_progress_callback_t g_progress_cb = NULL;
+static void *g_progress_ud = NULL;
+static size_t g_progress_id = 0;
+
+static void *new_source(void) {
+  g_live++;
+  return calloc(1, sizeof(stub_source_t));
+}
 
 vpkc_update_source_t *vpkc_new_source_file(const char *p) { (void)p; return new_source(); }
 vpkc_update_source_t *vpkc_new_source_http_url(const char *u) { (void)u; return new_source(); }
@@ -81,8 +103,16 @@ vpkc_update_source_t *vpkc_new_source_github(const char *u, const char *t, bool 
 vpkc_update_source_t *vpkc_new_source_gitlab(const char *u, const char *t, bool p) { (void)u; (void)t; (void)p; return new_source(); }
 vpkc_update_source_t *vpkc_new_source_gitea(const char *u, const char *t, bool p) { (void)u; (void)t; (void)p; return new_source(); }
 vpkc_update_source_t *vpkc_new_source_velopack_flow(const char *u) { (void)u; return new_source(); }
-vpkc_update_source_t *vpkc_new_source_custom_callback(vpkc_release_feed_delegate_t a, vpkc_free_release_feed_t b, vpkc_download_asset_delegate_t c, void *ud) { (void)a; (void)b; (void)c; (void)ud; return new_source(); }
-void vpkc_source_report_progress(size_t id, int16_t p) { (void)id; (void)p; }
+vpkc_update_source_t *vpkc_new_source_custom_callback(vpkc_release_feed_delegate_t a, vpkc_free_release_feed_t b, vpkc_download_asset_delegate_t c, void *ud) {
+  stub_source_t *src;
+  if (!a || !b || !c) { set_error("stub: custom source callbacks must not be null"); return NULL; }
+  src = (stub_source_t *)new_source();
+  src->custom = 1; src->feed = a; src->free_feed = b; src->download = c; src->user_data = ud;
+  return src;
+}
+void vpkc_source_report_progress(size_t id, int16_t p) {
+  if (id == g_progress_id && g_progress_id != 0 && g_progress_cb) g_progress_cb(g_progress_ud, (size_t)p);
+}
 void vpkc_free_source(vpkc_update_source_t *s) { if (s) { free(s); g_live--; } }
 
 /* ---- update manager ---- */
@@ -96,19 +126,20 @@ static void record_locator(struct vpkc_locator_config_t *l) {
   }
 }
 
-static bool make_manager(const char *url, vpkc_update_manager_t **out) {
+static bool make_manager(const char *url, const stub_source_t *src, vpkc_update_manager_t **out) {
   stub_manager_t *m;
   if (strcmp(url, "fail") == 0) { set_error("stub: cannot create manager"); return false; }
   m = (stub_manager_t *)calloc(1, sizeof *m);
   snprintf(m->url, sizeof m->url, "%s", url);
+  if (src) m->src = *src;
   g_live++;
   *out = m;
   return true;
 }
 
-bool vpkc_new_update_manager(const char *u, struct vpkc_update_options_t *o, struct vpkc_locator_config_t *l, vpkc_update_manager_t **m) { (void)o; record_locator(l); return make_manager(u, m); }
-bool vpkc_new_update_manager_flow(struct vpkc_update_options_t *o, struct vpkc_locator_config_t *l, vpkc_update_manager_t **m) { (void)o; (void)l; return make_manager("flow", m); }
-bool vpkc_new_update_manager_with_source(vpkc_update_source_t *s, struct vpkc_update_options_t *o, struct vpkc_locator_config_t *l, vpkc_update_manager_t **m) { (void)s; (void)o; record_locator(l); return make_manager("source", m); }
+bool vpkc_new_update_manager(const char *u, struct vpkc_update_options_t *o, struct vpkc_locator_config_t *l, vpkc_update_manager_t **m) { (void)o; record_locator(l); return make_manager(u, NULL, m); }
+bool vpkc_new_update_manager_flow(struct vpkc_update_options_t *o, struct vpkc_locator_config_t *l, vpkc_update_manager_t **m) { (void)o; (void)l; return make_manager("flow", NULL, m); }
+bool vpkc_new_update_manager_with_source(vpkc_update_source_t *s, struct vpkc_update_options_t *o, struct vpkc_locator_config_t *l, vpkc_update_manager_t **m) { (void)o; record_locator(l); return make_manager("source", (const stub_source_t *)s, m); }
 
 static size_t put(const char *s, char *buf, size_t c) {
   size_t need = strlen(s) + 1;
@@ -129,6 +160,14 @@ bool vpkc_update_pending_restart(vpkc_update_manager_t *m, struct vpkc_asset_t *
 vpkc_update_check_t vpkc_check_for_updates(vpkc_update_manager_t *m, struct vpkc_update_info_t **out) {
   stub_manager_t *s = (stub_manager_t *)m;
   vpkc_update_info_t *info;
+  if (s->src.custom) {
+    char *json;
+    snprintf(g_last_feed_name, sizeof g_last_feed_name, "%s", "releases.stable.json");
+    json = s->src.feed(s->src.user_data, g_last_feed_name);
+    if (!json) { set_error("stub: custom feed callback returned NULL"); return UPDATE_ERROR; }
+    snprintf(g_last_feed, sizeof g_last_feed, "%s", json);
+    s->src.free_feed(s->src.user_data, json);
+  }
   if (strstr(s->url, "noupdate")) return NO_UPDATE_AVAILABLE;
   if (strstr(s->url, "empty")) return REMOTE_IS_EMPTY;
   if (strstr(s->url, "error")) { set_error("stub: check failed"); return UPDATE_ERROR; }
@@ -145,7 +184,16 @@ vpkc_update_check_t vpkc_check_for_updates(vpkc_update_manager_t *m, struct vpkc
 
 bool vpkc_download_updates(vpkc_update_manager_t *m, struct vpkc_update_info_t *u, vpkc_progress_callback_t cb, void *ud) {
   stub_manager_t *s = (stub_manager_t *)m;
-  (void)u;
+  if (s->src.custom) {
+    bool ok;
+    if (cb) cb(ud, 0);
+    g_progress_cb = cb; g_progress_ud = ud; g_progress_id = 7;
+    ok = s->src.download(s->src.user_data, u->TargetFullRelease, "/tmp/vpk-stub-download.nupkg", g_progress_id);
+    g_progress_id = 0; g_progress_cb = NULL;
+    if (cb) cb(ud, 100);
+    if (!ok) { set_error("stub: custom download callback returned false"); return false; }
+    return true;
+  }
   if (strstr(s->url, "dlfail")) { set_error("stub: download failed"); return false; }
   if (cb) { cb(ud, 0); cb(ud, 50); cb(ud, 100); }
   return true;
@@ -200,6 +248,8 @@ void vpkc_set_logger(vpkc_log_callback_t cb, void *ud) { g_log_cb = cb; g_log_ud
 STUB_API int vpkc_stub_live_objects(void) { return g_live; }
 STUB_API const char *vpkc_stub_locator_root(void) { return g_loc_root; }
 STUB_API int vpkc_stub_locator_portable(void) { return g_loc_portable; }
+STUB_API const char *vpkc_stub_last_feed_name(void) { return g_last_feed_name; }
+STUB_API const char *vpkc_stub_last_feed(void) { return g_last_feed; }
 STUB_API int vpkc_stub_auto_apply(void) { return g_auto_apply; }
 STUB_API const char *vpkc_stub_apply_version(void) { return g_apply_version; }
 STUB_API int vpkc_stub_apply_silent(void) { return g_apply_silent; }
