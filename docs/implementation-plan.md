@@ -22,7 +22,7 @@ Status legend: `[x]` done, `[ ]` open. Keep this file truthful.
 - [x] `Velopack.Manager`: sources (file, HTTP, GitHub, GitLab, Gitea, Flow),
       options, check / download / apply, pending-restart query
       (custom callback sources are not wrapped yet, see M5)
-- [ ] Logger bridge (`vpkc_set_logger`)
+- [x] Logger bridge (`Velopack.Log`, `vpkc_set_logger`)
 - [x] Unit tests against the stub, including leak counting
 
 ## M3 - Examples

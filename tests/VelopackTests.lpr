@@ -4,7 +4,7 @@ program VelopackTests;
 
 uses
   Classes, consoletestrunner,
-  TestStrings, TestNative, TestManager, TestApp;
+  TestStrings, TestNative, TestManager, TestApp, TestLog;
 
 type
   TVelopackTestRunner = class(TTestRunner);

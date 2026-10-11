@@ -50,6 +50,7 @@ Dependency rule: a layer may only use layers below it.
 | `Velopack.Internal` | Not public API: native <-> Pascal conversion helpers |
 | `Velopack.App` | `TVelopackApp`: startup hooks, must run first in `main` |
 | `Velopack.Manager` | `TUpdateManager`, `TUpdateSource`, `TUpdateInfo` |
+| `Velopack.Log` | Bridge for native log messages |
 
 ## Key design points
 
