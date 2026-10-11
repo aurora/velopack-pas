@@ -42,11 +42,13 @@ Status legend: `[x]` done, `[ ]` open. Keep this file truthful.
       all 36 exports match (checked on Linux against the built library)
 - [x] Smoke tests against the real library on Linux (load, exports, sources,
       error path, `TVelopackApp.Run`); built from the pinned revision in CI
-- [ ] Test against the real library on Windows and macOS
+- [x] Windows 32-bit (FPC 3.2.2 + MinGW stub) in CI against the C stub; found
+      and fixed a thread-lifetime bug in `TVelopackUpdater` (see architecture)
+- [ ] Windows 64-bit and the real library on Windows; macOS
 - [ ] End-to-end update cycle with an installed app and a `vpk`-built feed
 - [x] CI: FPC tests, console example, Lazarus package and LCL example on
-      GitHub Actions (`.github/workflows/ci.yml`, Linux only; Windows/macOS jobs
-      still to do)
+      GitHub Actions (`.github/workflows/ci.yml`; Linux jobs required, Windows
+      job experimental/`continue-on-error`, macOS still to do)
 - [ ] Custom update source via callbacks (`vpkc_new_source_custom_callback`)
 - [ ] Lazarus Online Package Manager metadata, release tagging
 

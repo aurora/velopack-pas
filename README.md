@@ -72,7 +72,8 @@ Free Pascal programs on Unix must link `cthreads` (Lazarus does this for you).
 | Compiler | Status |
 |----------|--------|
 | Free Pascal 3.2.2, Linux | built and tested (also Lazarus 3.0 / LCL gtk2 build) |
-| Free Pascal, Windows / macOS | expected to work, untested |
+| Free Pascal 3.2.2, Windows 32-bit | tests pass in CI against the stub (experimental job) |
+| Free Pascal, Windows 64-bit / macOS | expected to work, untested |
 | Delphi 10.4+ | designed for, **untested** |
 
 ## Getting the native library

@@ -75,6 +75,17 @@ Dependency rule: a layer may only use layers below it.
 - **Errors become exceptions**: native failures are raised as `EVelopackError`
   carrying the message from `vpkc_get_last_error`.
 
+## Threading rule for the updater component
+
+Code that runs inside `CheckSynchronize` (the component's `Drain` method and the
+events it raises) never waits for a thread. FPC's `TThread.WaitFor` pumps the
+main-thread queue when called on the main thread (always on Windows, in a loop
+on Unix), so waiting from a queued method re-enters the queue. Finished worker
+threads are retired and freed later; `Destroy` sets a flag first so a re-entrant
+`Drain` only discards messages and frees the update info they own. Both
+failure modes were found by the Windows CI job and are covered by tests
+(`DestroyWhileBusyIsSafe`, `DestroyWithUndeliveredResultDoesNotLeak`).
+
 ## Startup contract
 
 `TVelopackApp.Run` must be called as the very first statement of the
