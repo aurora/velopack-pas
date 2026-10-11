@@ -114,6 +114,12 @@ jobs:
         run: |
           fpc -iV -iTP -iTO
           gcc --version | head -1
+      - name: Locate FPCUnit
+        shell: msys2 {0}
+        run: |
+          find /c/tools/freepascal -iname 'consoletestrunner*' | head
+          find /c/tools/freepascal -iname 'fpcunit*' | head
+          ls /c/tools/freepascal
       - name: Run tests
         shell: msys2 {0}
         run: tests/run-tests.sh
