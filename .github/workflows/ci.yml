@@ -166,8 +166,9 @@ jobs:
         shell: msys2 {0}
         env:
           FPC_OPTS: -FuC:/tools/freepascal/units/i386-win32/*
-          # Forward slashes: the path goes through MSYS into a native program.
-          VELOPACK_REAL_LIB: ${{ replace(github.workspace, '\', '/') }}/velopack-src/target/i686-pc-windows-msvc/release/velopack_libc.dll
         run: |
+          # Native Windows path with forward slashes: it goes into a native program.
+          export VELOPACK_REAL_LIB="$(cygpath -m "$GITHUB_WORKSPACE")/velopack-src/target/i686-pc-windows-msvc/release/velopack_libc.dll"
           echo "real library: $VELOPACK_REAL_LIB"
+          ls -la "$VELOPACK_REAL_LIB"
           timeout 120 tests/run-tests.sh --suite=TRealLibraryTests
