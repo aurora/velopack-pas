@@ -15,44 +15,48 @@
     <Description Value="Velopack installer and auto-update bindings for Free Pascal / Lazarus"/>
     <License Value="MIT"/>
     <Version Minor="1"/>
-    <Files Count="9">
+    <Files Count="10">
       <Item1>
         <Filename Value="../../src/Velopack.App.pas"/>
         <UnitName Value="Velopack.App"/>
       </Item1>
       <Item2>
-        <Filename Value="../../src/Velopack.Internal.pas"/>
-        <UnitName Value="Velopack.Internal"/>
+        <Filename Value="../../src/Velopack.CustomSource.pas"/>
+        <UnitName Value="Velopack.CustomSource"/>
       </Item2>
       <Item3>
-        <Filename Value="../../src/Velopack.Log.pas"/>
-        <UnitName Value="Velopack.Log"/>
+        <Filename Value="../../src/Velopack.Internal.pas"/>
+        <UnitName Value="Velopack.Internal"/>
       </Item3>
       <Item4>
-        <Filename Value="../../src/Velopack.Manager.pas"/>
-        <UnitName Value="Velopack.Manager"/>
+        <Filename Value="../../src/Velopack.Log.pas"/>
+        <UnitName Value="Velopack.Log"/>
       </Item4>
       <Item5>
-        <Filename Value="../../src/Velopack.Native.pas"/>
-        <UnitName Value="Velopack.Native"/>
+        <Filename Value="../../src/Velopack.Manager.pas"/>
+        <UnitName Value="Velopack.Manager"/>
       </Item5>
       <Item6>
-        <Filename Value="../../src/Velopack.Strings.pas"/>
-        <UnitName Value="Velopack.Strings"/>
+        <Filename Value="../../src/Velopack.Native.pas"/>
+        <UnitName Value="Velopack.Native"/>
       </Item6>
       <Item7>
-        <Filename Value="../../src/Velopack.Types.pas"/>
-        <UnitName Value="Velopack.Types"/>
+        <Filename Value="../../src/Velopack.Strings.pas"/>
+        <UnitName Value="Velopack.Strings"/>
       </Item7>
       <Item8>
-        <Filename Value="../../src/Velopack.Updater.pas"/>
-        <UnitName Value="Velopack.Updater"/>
+        <Filename Value="../../src/Velopack.Types.pas"/>
+        <UnitName Value="Velopack.Types"/>
       </Item8>
       <Item9>
+        <Filename Value="../../src/Velopack.Updater.pas"/>
+        <UnitName Value="Velopack.Updater"/>
+      </Item9>
+      <Item10>
         <Filename Value="../Velopack.Reg.pas"/>
         <HasRegisterProc Value="True"/>
         <UnitName Value="Velopack.Reg"/>
-      </Item9>
+      </Item10>
     </Files>
     <RequiredPkgs Count="1">
       <Item1>

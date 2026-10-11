@@ -8,9 +8,9 @@ unit velopack_pas;
 interface
 
 uses
-  Velopack.App, Velopack.Internal, Velopack.Log, Velopack.Manager, 
-  Velopack.Native, Velopack.Strings, Velopack.Types, Velopack.Updater, 
-  Velopack.Reg, LazarusPackageIntf;
+  Velopack.App, Velopack.CustomSource, Velopack.Internal, Velopack.Log, 
+  Velopack.Manager, Velopack.Native, Velopack.Strings, Velopack.Types, 
+  Velopack.Updater, Velopack.Reg, LazarusPackageIntf;
 
 implementation
 

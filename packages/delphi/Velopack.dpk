@@ -43,6 +43,7 @@ contains
   Velopack.App in '..\..\src\Velopack.App.pas',
   Velopack.Log in '..\..\src\Velopack.Log.pas',
   Velopack.Manager in '..\..\src\Velopack.Manager.pas',
+  Velopack.CustomSource in '..\..\src\Velopack.CustomSource.pas',
   Velopack.Updater in '..\..\src\Velopack.Updater.pas',
   Velopack.Reg in '..\Velopack.Reg.pas';
 
