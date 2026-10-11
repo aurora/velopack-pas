@@ -38,8 +38,9 @@ const
   REMOTE_IS_EMPTY = 2;
 
 type
-  { C "bool" is one byte. }
-  vpkc_bool = ByteBool;
+  { C "bool" is one byte that must be exactly 0 or 1. Do NOT use ByteBool:
+    its True is 255, which is undefined behavior for C / Rust bool. }
+  vpkc_bool = Boolean;
   vpkc_size_t = NativeUInt;
 
   vpkc_update_check_t = Int8;
