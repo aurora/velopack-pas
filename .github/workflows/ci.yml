@@ -173,10 +173,10 @@ jobs:
           ls -la "$VELOPACK_REAL_LIB"
           timeout 120 tests/run-tests.sh --suite=TRealLibraryTests
 
-  # EXPERIMENTAL: macOS. Free Pascal 3.2.2 has no official Apple Silicon
-  # compiler, so the matrix tries an Intel runner (native x86_64) and the ARM
-  # runner (Homebrew's fpc may run under Rosetta or not exist) to find out what
-  # works. Remove the entries that do not work once known.
+  # EXPERIMENTAL: macOS. Both runners worked on the first run: Homebrew's fpc
+  # 3.2.2 produces native code on Intel (x86_64) and on Apple Silicon (arm64),
+  # and the real library builds natively on each. Keep continue-on-error until
+  # the job has proven stable over a few more runs.
   macos:
     name: FPC tests + real library (${{ matrix.label }}, experimental)
     runs-on: ${{ matrix.os }}
