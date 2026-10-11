@@ -6,9 +6,10 @@ Free Pascal / Lazarus and Delphi bindings for [Velopack](https://velopack.io),
 the installer and auto-update framework. Works in console and GUI
 applications.
 
-> **Status: early.** The core binding and object API are implemented and tested
-> against a stub of the native library. It has **not** yet been verified against
-> the real Velopack library, nor with Delphi. See
+> **Status: early.** The binding and object API are implemented. Tests run
+> against a stub of the native library and, in CI, smoke tests against the real
+> Velopack library on Linux. A full update cycle (installed app, real feed),
+> Windows/macOS and Delphi are **not** verified yet. See
 > [docs/implementation-plan.md](docs/implementation-plan.md).
 
 ## How it works
@@ -74,10 +75,26 @@ Free Pascal programs on Unix must link `cthreads` (Lazarus does this for you).
 | Free Pascal, Windows / macOS | expected to work, untested |
 | Delphi 10.4+ | designed for, **untested** |
 
+## Getting the native library
+
+Build it from the Velopack sources (needs Rust):
+
+```
+git clone https://github.com/velopack/velopack
+cd velopack && cargo build --release -p velopack_libc
+# -> target/release/libvelopack_libc.so | velopack_libc.dll | libvelopack_libc.dylib
+```
+
+Use the revision in [third_party/velopack/VERSION](third_party/velopack/VERSION)
+(the one the vendored header and CI use) and put the library next to your
+executable, or point `VELOPACK_LIBRARY` at it.
+
 ## Development
 
 ```
 tests/run-tests.sh      # builds the native stub and runs the FPCUnit suite
+# also run the smoke tests against a real library:
+VELOPACK_REAL_LIB=/path/to/libvelopack_libc.so tests/run-tests.sh
 ```
 
 Read [AGENTS.md](AGENTS.md) before contributing (modular design, small

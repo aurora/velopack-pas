@@ -37,8 +37,13 @@ Status legend: `[x]` done, `[ ]` open. Keep this file truthful.
       **unverified** (needs maintainer testing with Delphi)
 
 ## M5 - Quality and release
-- [ ] Verify real native library name per platform (see Open questions)
-- [ ] Test against the real Velopack library on Windows and Linux
+- [x] Verify real native library name: crate `velopack_libc` (cdylib), i.e.
+      `libvelopack_libc.so` / `velopack_libc.dll` / `libvelopack_libc.dylib`;
+      all 36 exports match (checked on Linux against the built library)
+- [x] Smoke tests against the real library on Linux (load, exports, sources,
+      error path, `TVelopackApp.Run`); built from the pinned revision in CI
+- [ ] Test against the real library on Windows and macOS
+- [ ] End-to-end update cycle with an installed app and a `vpk`-built feed
 - [x] CI: FPC tests, console example, Lazarus package and LCL example on
       GitHub Actions (`.github/workflows/ci.yml`, Linux only; Windows/macOS jobs
       still to do)
@@ -47,9 +52,9 @@ Status legend: `[x]` done, `[ ]` open. Keep this file truthful.
 
 ## Open questions
 
-1. **Native library file name.** Assumed `velopack_libc` (`.dll`, `lib*.so`,
-   `lib*.dylib`). Not yet verified; override with `VELOPACK_LIBRARY` or
-   `VpkcLibraryName` until confirmed.
-2. **Distribution of the native library.** Where to obtain it for each
-   platform and which Velopack version to pin.
-3. **macOS / Delphi non-Windows targets.** Supported by the design, untested.
+1. **Distribution of the native library.** Velopack publishes no standalone
+   download of `velopack_libc` that we know of; we build it from source
+   (`cargo build --release -p velopack_libc`) at the revision pinned in
+   `third_party/velopack/VERSION`. Decide whether to publish prebuilt binaries
+   with our releases.
+2. **macOS / Delphi non-Windows targets.** Supported by the design, untested.
