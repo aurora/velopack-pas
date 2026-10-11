@@ -3,8 +3,9 @@ program VelopackTests;
 {$I ../src/Velopack.Compat.inc}
 
 uses
+  {$IFDEF UNIX}cthreads,{$ENDIF}
   Classes, consoletestrunner,
-  TestStrings, TestNative, TestManager, TestApp, TestLog;
+  TestStrings, TestNative, TestManager, TestApp, TestLog, TestUpdater;
 
 type
   TVelopackTestRunner = class(TTestRunner);
