@@ -1,0 +1,49 @@
+// UNVERIFIED: written without access to a Delphi compiler. Please report
+// problems. Contains the whole library; the component is registered through
+// Velopack.Reg. Open in the IDE and build/install, or build with MSBuild.
+package Velopack;
+
+{$R *.res}
+{$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}
+{$ALIGN 8}
+{$ASSERTIONS ON}
+{$BOOLEVAL OFF}
+{$DEBUGINFO OFF}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS ON}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION OFF}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS OFF}
+{$REFERENCEINFO ON}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES ON}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST OFF}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $400000}
+{$DEFINE DEBUG}
+{$ENDIF IMPLICITBUILDING}
+{$DESCRIPTION 'Velopack bindings (velopack-pas)'}
+{$RUNONLY}
+{$IMPLICITBUILD ON}
+
+requires
+  rtl;
+
+contains
+  Velopack.Strings in '..\..\src\Velopack.Strings.pas',
+  Velopack.Types in '..\..\src\Velopack.Types.pas',
+  Velopack.Native in '..\..\src\Velopack.Native.pas',
+  Velopack.Internal in '..\..\src\Velopack.Internal.pas',
+  Velopack.App in '..\..\src\Velopack.App.pas',
+  Velopack.Log in '..\..\src\Velopack.Log.pas',
+  Velopack.Manager in '..\..\src\Velopack.Manager.pas',
+  Velopack.Updater in '..\..\src\Velopack.Updater.pas',
+  Velopack.Reg in '..\Velopack.Reg.pas';
+
+end.
