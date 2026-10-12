@@ -6,6 +6,9 @@ name: Release
 on:
   push:
     tags: ["v*"]
+    # TEMPORARY, removed again right after the first dry run on this branch.
+    branches: ["claude/eager-clarke-ef0h56"]
+    paths: [".github/workflows/release.yml", "tools/**"]
   workflow_dispatch:
 
 permissions:
