@@ -88,7 +88,13 @@ Free Pascal programs on Unix must link `cthreads` (Lazarus does this for you).
 
 ## Getting the native library
 
-Build it from the Velopack sources (needs Rust):
+**From a release:** every release has `velopack-native-<os>-<arch>.zip` archives
+with the prebuilt library (and Velopack's license). Unpack the one for your
+platform and put the library next to your executable, or point the environment
+variable `VELOPACK_LIBRARY` at it. See [docs/releasing.md](docs/releasing.md)
+for what is built and tested.
+
+**Or build it yourself** from the Velopack sources (needs Rust):
 
 ```
 git clone https://github.com/velopack/velopack
@@ -97,8 +103,7 @@ cd velopack && cargo build --release -p velopack_libc
 ```
 
 Use the revision in [third_party/velopack/VERSION](third_party/velopack/VERSION)
-(the one the vendored header and CI use) and put the library next to your
-executable, or point `VELOPACK_LIBRARY` at it.
+(the one the vendored header and CI use).
 
 ## Development
 

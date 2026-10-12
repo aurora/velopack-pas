@@ -60,17 +60,15 @@ Status legend: `[x]` done, `[ ]` open. Keep this file truthful.
 - [x] Custom update source via callbacks (`Velopack.CustomSource`); tested against
       the stub and, in CI, end to end against the real library (feed, download,
       checksum verification)
-- [ ] Lazarus Online Package Manager metadata, release tagging
+- [x] Release workflow (`.github/workflows/release.yml`, ADR 0009, `docs/releasing.md`):
+      native libraries for 5 platforms + sources + checksums on a `v*` tag
+- [ ] First real release (needs a tag; maintainer's decision)
+- [ ] Lazarus Online Package Manager metadata
 
 ## Open questions
 
-1. **Distribution of the native library.** Velopack publishes no standalone
-   download of `velopack_libc` that we know of; we build it from source
-   (`cargo build --release -p velopack_libc`) at the revision pinned in
-   `third_party/velopack/VERSION`. Decide whether to publish prebuilt binaries
-   with our releases.
-   Lead: upstream's release workflow (`.github/workflows/build-rust.yml`) builds
-   `velopack_libc_win_{x86,x64,arm64}_msvc.dll`, `velopack_libc_linux_*_gnu.so`
-   and `velopack_libc_osx.dylib`; whether these are attached to public releases
-   still has to be checked.
+1. **Distribution of the native library.** Decided in ADR 0009: prebuilt
+   libraries are published with releases. Still open: whether upstream attaches
+   its own `velopack_libc` builds to public releases (not checked), code signing
+   / notarization, and a Linux arm64 build.
 2. **Delphi on non-Windows targets.** Supported by the design, untested.
