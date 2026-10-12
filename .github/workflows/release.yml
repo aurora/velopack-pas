@@ -1,0 +1,184 @@
+name: Release
+
+# Publishing happens only for a pushed tag like v0.1.0 (or v0.1.0-beta.1, which
+# is marked as a pre-release). Everything else is a dry run: the same builds run
+# and their results are kept as workflow artifacts, but no release is created.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    name: Plan
+    runs-on: ubuntu-latest
+    outputs:
+      publish: ${{ steps.plan.outputs.publish }}
+      version: ${{ steps.plan.outputs.version }}
+      velopack_commit: ${{ steps.plan.outputs.velopack_commit }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: plan
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            tag="${GITHUB_REF_NAME}"
+            if ! [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+              echo "::error::Tag '$tag' is not of the form vMAJOR.MINOR.PATCH[-suffix]"
+              exit 1
+            fi
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+            echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "version=0.0.0-dryrun.${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          fi
+          echo "velopack_commit=$(sed -n 's/^commit=//p' third_party/velopack/VERSION)" >> "$GITHUB_OUTPUT"
+
+  # Only for real releases: refuse to publish a commit whose CI did not pass.
+  verify-ci:
+    name: CI passed for this commit
+    needs: plan
+    if: needs.plan.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          result=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?head_sha=${GITHUB_SHA}" \
+            --jq '[.workflow_runs[] | select(.status=="completed")] | map(.conclusion) | join(",")')
+          echo "CI conclusions for ${GITHUB_SHA}: ${result:-none}"
+          if [[ ",${result}," != *",success,"* ]]; then
+            echo "::error::No successful CI run for ${GITHUB_SHA}. Let CI pass before tagging."
+            exit 1
+          fi
+
+  native:
+    name: Native library (${{ matrix.os_name }} ${{ matrix.arch }})
+    needs: plan
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # ubuntu-22.04 on purpose: an older glibc runs on more distributions.
+          - { runner: ubuntu-22.04, os_name: linux, arch: x64, rust_target: x86_64-unknown-linux-gnu, lib: libvelopack_libc.so, py: python3 }
+          - { runner: windows-latest, os_name: windows, arch: x64, rust_target: x86_64-pc-windows-msvc, lib: velopack_libc.dll, py: python }
+          - { runner: windows-latest, os_name: windows, arch: x86, rust_target: i686-pc-windows-msvc, lib: velopack_libc.dll, py: python }
+          - { runner: macos-15-intel, os_name: macos, arch: x64, rust_target: x86_64-apple-darwin, lib: libvelopack_libc.dylib, py: python3 }
+          - { runner: macos-latest, os_name: macos, arch: arm64, rust_target: aarch64-apple-darwin, lib: libvelopack_libc.dylib, py: python3 }
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: velopack/velopack
+          ref: ${{ needs.plan.outputs.velopack_commit }}
+          path: velopack-src
+      - name: Add the Rust target
+        run: rustup target add ${{ matrix.rust_target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: velopack-src
+          key: release-${{ matrix.rust_target }}
+      - name: Build
+        working-directory: velopack-src
+        env:
+          # Windows: no dependency on the VC runtime DLL (as in upstream's releases).
+          RUSTFLAGS: ${{ matrix.os_name == 'windows' && '-C target-feature=+crt-static' || '' }}
+          # macOS: run on older systems than the build machine.
+          MACOSX_DEPLOYMENT_TARGET: "11.0"
+        run: cargo build --release -p velopack_libc --target ${{ matrix.rust_target }}
+      - name: Package
+        run: |
+          ${{ matrix.py }} tools/package-native.py \
+            --lib "velopack-src/target/${{ matrix.rust_target }}/release/${{ matrix.lib }}" \
+            --license velopack-src/LICENSE \
+            --out dist \
+            --os ${{ matrix.os_name }} --arch ${{ matrix.arch }} \
+            --velopack-commit ${{ needs.plan.outputs.velopack_commit }} \
+            --rust-target ${{ matrix.rust_target }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-${{ matrix.os_name }}-${{ matrix.arch }}
+          path: dist/*.zip
+          if-no-files-found: error
+
+  source:
+    name: Pascal sources
+    needs: plan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Archive
+        run: |
+          mkdir dist
+          git archive --format=zip --prefix="velopack-pas-${{ needs.plan.outputs.version }}/" \
+            -o "dist/velopack-pas-${{ needs.plan.outputs.version }}-src.zip" HEAD
+          unzip -l "dist/velopack-pas-${{ needs.plan.outputs.version }}-src.zip" | tail -3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: source
+          path: dist/*.zip
+          if-no-files-found: error
+
+  release:
+    name: Publish release
+    needs: [plan, verify-ci, native, source]
+    if: needs.plan.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: assets
+          merge-multiple: true
+      - name: Checksums and notes
+        run: |
+          cd assets
+          sha256sum *.zip > SHA256SUMS
+          cat SHA256SUMS
+          cd ..
+          cat > notes.md <<NOTES
+          velopack-pas ${{ needs.plan.outputs.version }}
+
+          Free Pascal / Lazarus and Delphi bindings for Velopack. Use the source
+          archive (or the Git tag) for the Pascal units and packages; the
+          \`velopack-native-*\` archives contain prebuilt Velopack native
+          libraries, built from Velopack commit
+          \`${{ needs.plan.outputs.velopack_commit }}\`.
+
+          | Library | Tested in CI with velopack-pas |
+          |---------|--------------------------------|
+          | linux x64 | yes |
+          | windows x86 | yes |
+          | macos x64 | yes |
+          | macos arm64 | yes |
+          | windows x64 | built, not tested with Pascal yet (no 64-bit Free Pascal in CI) |
+
+          Delphi support has not been verified. See the README for details.
+          Checksums are in \`SHA256SUMS\`.
+          NOTES
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          flags=()
+          case "${GITHUB_REF_NAME}" in *-*) flags+=(--prerelease) ;; esac
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "velopack-pas ${{ needs.plan.outputs.version }}" \
+            --notes-file notes.md \
+            "${flags[@]}" \
+            assets/*
