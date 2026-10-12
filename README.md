@@ -94,6 +94,17 @@ platform and put the library next to your executable, or point the environment
 variable `VELOPACK_LIBRARY` at it. See [docs/releasing.md](docs/releasing.md)
 for what is built and tested.
 
+**From a script**, e.g. in your build (Python 3, standard library only; the
+SHA-256 sum is checked against the release before anything is written):
+
+```
+python3 tools/fetch-native.py --version v0.1.0 --dest bin
+python3 tools/fetch-native.py --version v0.1.0 --dest bin --arch x86   # 32-bit exe on 64-bit Windows
+```
+
+`--arch` is the architecture of *your executable*, not of the machine. Without
+`--version` the latest stable (non-pre-release) release is used.
+
 **Or build it yourself** from the Velopack sources (needs Rust):
 
 ```

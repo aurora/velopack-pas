@@ -28,6 +28,8 @@ jobs:
       - name: Build console example
         run: |
           fpc -Mdelphi -Fusrc -FUbuild/units -FEbuild examples/console/ConsoleDemo.lpr
+      - name: Tests of the release tools
+        run: python3 -m unittest discover -s tools -v
 
   # Lazarus package and the LCL example (compile only, no display needed).
   lazarus:
