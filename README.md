@@ -71,6 +71,14 @@ Updater.OnDownloadCompleted := HandleDownloaded; // Updater.ApplyUpdatesAndResta
 Updater.CheckForUpdates;
 ```
 
+For releases published on GitHub (`vpk upload github`) set the repository
+instead of the URL; `GitHubPrerelease` includes pre-releases, and
+`GitHubAccessToken` (public property, not published) serves private repositories:
+
+```pascal
+Updater.GitHubRepoUrl := 'https://github.com/owner/repo';
+```
+
 Install the Lazarus package `packages/lazarus/velopack_pas.lpk` (or the Delphi
 package `packages/delphi/Velopack.dpk`) to get the component on the palette.
 Examples: [console](examples/console), [LCL](examples/lcl), [VCL](examples/vcl).

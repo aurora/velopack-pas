@@ -29,6 +29,7 @@ type
     procedure DownloadReportsProgressThenCompleted;
     procedure ErrorsAreDeliveredAsEvents;
     procedure SecondOperationWhileBusyRaises;
+    procedure GitHubSourceIsUsedWhenConfigured;
     procedure DownloadWithoutCheckRaises;
     procedure ApplyWithoutDownloadRaises;
     procedure DestroyWhileBusyIsSafe;
@@ -114,6 +115,21 @@ begin
   WaitIdle;
   CheckEquals('check:1:;', FLog);
   CheckTrue(FUpdater.Info = nil);
+end;
+
+procedure TUpdaterTests.GitHubSourceIsUsedWhenConfigured;
+type
+  TCStrFn = function: PAnsiChar; cdecl;
+begin
+  FUpdater.UpdateUrl := 'noupdate'; // must be ignored in favour of GitHub
+  FUpdater.GitHubRepoUrl := 'https://github.com/owner/repo';
+  FUpdater.GitHubAccessToken := 'tok';
+  FUpdater.GitHubPrerelease := True;
+  FUpdater.CheckForUpdates;
+  WaitIdle;
+  CheckEquals('check:0:2.0.0;', FLog);
+  CheckEquals('https://github.com/owner/repo|tok|1',
+    string(TCStrFn(StubProc('vpkc_stub_last_github'))()));
 end;
 
 procedure TUpdaterTests.DownloadReportsProgressThenCompleted;

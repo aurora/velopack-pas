@@ -87,6 +87,7 @@ static void free_asset_fields(vpkc_asset_t *a) {
  * and the progress id is only valid while the download callback runs. */
 static char g_last_feed_name[128] = "";
 static char g_last_feed[2048] = "";
+static char g_last_github[1024] = "";
 static vpkc_progress_callback_t g_progress_cb = NULL;
 static void *g_progress_ud = NULL;
 static size_t g_progress_id = 0;
@@ -99,7 +100,10 @@ static void *new_source(void) {
 vpkc_update_source_t *vpkc_new_source_file(const char *p) { (void)p; return new_source(); }
 vpkc_update_source_t *vpkc_new_source_http_url(const char *u) { (void)u; return new_source(); }
 vpkc_update_source_t *vpkc_new_source_http_url_with_options(const char *u, struct vpkc_http_options_t *o) { (void)u; (void)o; return new_source(); }
-vpkc_update_source_t *vpkc_new_source_github(const char *u, const char *t, bool p) { (void)u; (void)t; (void)p; return new_source(); }
+vpkc_update_source_t *vpkc_new_source_github(const char *u, const char *t, bool p) {
+  snprintf(g_last_github, sizeof g_last_github, "%s|%s|%d", u ? u : "", t ? t : "", p ? 1 : 0);
+  return new_source();
+}
 vpkc_update_source_t *vpkc_new_source_gitlab(const char *u, const char *t, bool p) { (void)u; (void)t; (void)p; return new_source(); }
 vpkc_update_source_t *vpkc_new_source_gitea(const char *u, const char *t, bool p) { (void)u; (void)t; (void)p; return new_source(); }
 vpkc_update_source_t *vpkc_new_source_velopack_flow(const char *u) { (void)u; return new_source(); }
@@ -250,6 +254,7 @@ STUB_API const char *vpkc_stub_locator_root(void) { return g_loc_root; }
 STUB_API int vpkc_stub_locator_portable(void) { return g_loc_portable; }
 STUB_API const char *vpkc_stub_last_feed_name(void) { return g_last_feed_name; }
 STUB_API const char *vpkc_stub_last_feed(void) { return g_last_feed; }
+STUB_API const char *vpkc_stub_last_github(void) { return g_last_github; }
 STUB_API int vpkc_stub_auto_apply(void) { return g_auto_apply; }
 STUB_API const char *vpkc_stub_apply_version(void) { return g_apply_version; }
 STUB_API int vpkc_stub_apply_silent(void) { return g_apply_silent; }

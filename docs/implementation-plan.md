@@ -64,6 +64,8 @@ Status legend: `[x]` done, `[ ]` open. Keep this file truthful.
       native libraries for 5 platforms + sources + checksums on a `v*` tag
 - [x] `tools/fetch-native.py`: downloads and verifies the native library from a
       release (unit-tested against a fake release; not yet run against a real one)
+- [x] `TVelopackUpdater` can fetch from GitHub releases (`GitHubRepoUrl`,
+      `GitHubPrerelease`, `GitHubAccessToken`); tested against the stub only
 - [ ] First real release (needs a tag; maintainer's decision)
 - [ ] Lazarus Online Package Manager metadata
 

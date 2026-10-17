@@ -70,6 +70,9 @@ type
       TJobArray = array of TJob;
   private
     FUpdateUrl: string;
+    FGitHubRepoUrl: string;
+    FGitHubAccessToken: string;
+    FGitHubPrerelease: Boolean;
     FAllowVersionDowngrade: Boolean;
     FExplicitChannel: string;
     FManager: TUpdateManager;
@@ -84,6 +87,11 @@ type
     FOnDownloadCompleted: TNotifyEvent;
     FOnError: TVelopackErrorEvent;
     procedure SetUpdateUrl(const AValue: string);
+    procedure SetGitHubRepoUrl(const AValue: string);
+    procedure SetGitHubAccessToken(const AValue: string);
+    procedure SetGitHubPrerelease(AValue: Boolean);
+    procedure ResetManager;
+    function CreateManager: TUpdateManager;
     procedure SetAllowVersionDowngrade(AValue: Boolean);
     procedure SetExplicitChannel(const AValue: string);
     procedure RequireIdle;
@@ -121,10 +129,22 @@ type
     { Update information of the last successful check, nil if none. Owned by
       the component. }
     property Info: TUpdateInfo read FInfo;
+    { Access token for a private GitHub repository. Public only, not
+      published: a token must not end up in a form file. Cannot be changed
+      while busy. }
+    property GitHubAccessToken: string read FGitHubAccessToken
+      write SetGitHubAccessToken;
   published
     { Location of the release feed (URL or local directory). Cannot be changed
-      while busy. }
+      while busy. Ignored when GitHubRepoUrl is set. }
     property UpdateUrl: string read FUpdateUrl write SetUpdateUrl;
+    { Fetch releases from the GitHub releases of a repository instead, for
+      example 'https://github.com/owner/repo'. Takes precedence over
+      UpdateUrl. Cannot be changed while busy. }
+    property GitHubRepoUrl: string read FGitHubRepoUrl write SetGitHubRepoUrl;
+    { Include pre-releases when GitHubRepoUrl is used. }
+    property GitHubPrerelease: Boolean read FGitHubPrerelease
+      write SetGitHubPrerelease default False;
     property AllowVersionDowngrade: Boolean read FAllowVersionDowngrade
       write SetAllowVersionDowngrade default False;
     property ExplicitChannel: string read FExplicitChannel write SetExplicitChannel;
@@ -211,14 +231,48 @@ begin
     raise EVelopackUpdaterBusy.Create('An update operation is already running');
 end;
 
+{ Drops the manager and the update info; the manager is recreated lazily
+  with the current settings. }
+procedure TVelopackUpdater.ResetManager;
+begin
+  FreeAndNil(FManager);
+  FreeAndNil(FInfo);
+end;
+
 procedure TVelopackUpdater.SetUpdateUrl(const AValue: string);
 begin
   if AValue = FUpdateUrl then
     Exit;
   RequireIdle;
   FUpdateUrl := AValue;
-  FreeAndNil(FManager); // recreated lazily with the new settings
-  FreeAndNil(FInfo);
+  ResetManager;
+end;
+
+procedure TVelopackUpdater.SetGitHubRepoUrl(const AValue: string);
+begin
+  if AValue = FGitHubRepoUrl then
+    Exit;
+  RequireIdle;
+  FGitHubRepoUrl := AValue;
+  ResetManager;
+end;
+
+procedure TVelopackUpdater.SetGitHubAccessToken(const AValue: string);
+begin
+  if AValue = FGitHubAccessToken then
+    Exit;
+  RequireIdle;
+  FGitHubAccessToken := AValue;
+  ResetManager;
+end;
+
+procedure TVelopackUpdater.SetGitHubPrerelease(AValue: Boolean);
+begin
+  if AValue = FGitHubPrerelease then
+    Exit;
+  RequireIdle;
+  FGitHubPrerelease := AValue;
+  ResetManager;
 end;
 
 procedure TVelopackUpdater.SetAllowVersionDowngrade(AValue: Boolean);
@@ -227,8 +281,7 @@ begin
     Exit;
   RequireIdle;
   FAllowVersionDowngrade := AValue;
-  FreeAndNil(FManager);
-  FreeAndNil(FInfo);
+  ResetManager;
 end;
 
 procedure TVelopackUpdater.SetExplicitChannel(const AValue: string);
@@ -237,8 +290,7 @@ begin
     Exit;
   RequireIdle;
   FExplicitChannel := AValue;
-  FreeAndNil(FManager);
-  FreeAndNil(FInfo);
+  ResetManager;
 end;
 
 procedure TVelopackUpdater.StartJob(AKind: TJobKind);
@@ -295,19 +347,36 @@ begin
   Post(Msg);
 end;
 
-procedure TVelopackUpdater.RunCheck;
+{ Runs on the job thread. }
+function TVelopackUpdater.CreateManager: TUpdateManager;
 var
   Options: TUpdateOptions;
+  Source: TUpdateSource;
+begin
+  Options := DefaultUpdateOptions;
+  Options.AllowVersionDowngrade := FAllowVersionDowngrade;
+  Options.ExplicitChannel := FExplicitChannel;
+  if FGitHubRepoUrl <> '' then
+  begin
+    Source := TUpdateSource.FromGitHub(FGitHubRepoUrl, FGitHubAccessToken,
+      FGitHubPrerelease);
+    try
+      Result := TUpdateManager.CreateWithSource(Source, Options);
+    finally
+      Source.Free; // the manager keeps its own reference
+    end;
+  end
+  else
+    Result := TUpdateManager.Create(FUpdateUrl, Options);
+end;
+
+procedure TVelopackUpdater.RunCheck;
+var
   Found: TUpdateInfo;
   Msg: TMessage;
 begin
   if FManager = nil then
-  begin
-    Options := DefaultUpdateOptions;
-    Options.AllowVersionDowngrade := FAllowVersionDowngrade;
-    Options.ExplicitChannel := FExplicitChannel;
-    FManager := TUpdateManager.Create(FUpdateUrl, Options);
-  end;
+    FManager := CreateManager;
   Msg := Default(TMessage);
   Msg.Kind := mkCheckDone;
   Msg.CheckResult := FManager.CheckForUpdates(Found);
