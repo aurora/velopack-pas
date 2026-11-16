@@ -108,10 +108,16 @@ SHA-256 sum is checked against the release before anything is written):
 ```
 python3 tools/fetch-native.py --version v0.1.0 --dest bin
 python3 tools/fetch-native.py --version v0.1.0 --dest bin --arch x86   # 32-bit exe on 64-bit Windows
+python3 tools/fetch-native.py --version v0.1.0 --dest bin --with-license # plus LICENSE-velopack.txt
 ```
 
 `--arch` is the architecture of *your executable*, not of the machine. Without
-`--version` the latest stable (non-pre-release) release is used.
+`--version` the latest stable (non-pre-release) release is used. Velopack is
+MIT licensed: whoever ships the library ships its license text too;
+`--with-license` puts it next to the library.
+
+The Linux library is built on glibc 2.28 (manylinux_2_28, ADR 0010) and loads
+on distributions with that glibc or a newer one.
 
 **Or build it yourself** from the Velopack sources (needs Rust):
 

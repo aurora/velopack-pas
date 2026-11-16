@@ -24,14 +24,15 @@ package = load("package_native", "package-native.py")
 
 
 def make_release(directory, os_name="linux", arch="x64", payload=b"LIB-BYTES",
-                 corrupt_sums=False, library=True):
+                 corrupt_sums=False, library=True, license=True):
     """Builds a fake release directory: one archive plus SHA256SUMS."""
     name = fetch.asset_name(os_name, arch)
     archive = pathlib.Path(directory) / name
     with zipfile.ZipFile(archive, "w") as z:
         if library:
             z.writestr(fetch.LIBRARY_NAME[os_name], payload)
-        z.writestr("LICENSE-velopack.txt", "MIT")
+        if license:
+            z.writestr(fetch.LICENSE_NAME, "MIT")
     digest = hashlib.sha256(archive.read_bytes()).hexdigest()
     if corrupt_sums:
         digest = "0" * 64
@@ -51,6 +52,10 @@ class Detection(unittest.TestCase):
 
     def test_library_names_match_the_packaging_script(self):
         self.assertEqual(fetch.LIBRARY_NAME, package.EXPECTED_NAME)
+
+    def test_license_name_matches_the_packaging_script(self):
+        source = (HERE / "package-native.py").read_text()
+        self.assertIn('"%s"' % fetch.LICENSE_NAME, source)
 
     def test_asset_names_match_the_release_workflow(self):
         self.assertEqual(fetch.asset_name("windows", "x86"), "velopack-native-windows-x86.zip")
@@ -94,6 +99,30 @@ class EndToEnd(unittest.TestCase):
         with open(path, "rb") as f:
             self.assertEqual(f.read(), b"LIB-BYTES")
         self.assertEqual(os.listdir(self.dest), ["libvelopack_libc.so"])
+
+    def test_with_license_writes_the_license_too(self):
+        make_release(self.rel)
+        fetch.fetch("a/b", "v1", "linux", "x64", self.dest,
+                    pathlib.Path(self.rel).as_uri(), with_license=True)
+        self.assertEqual(sorted(os.listdir(self.dest)),
+                         ["LICENSE-velopack.txt", "libvelopack_libc.so"])
+        with open(os.path.join(self.dest, fetch.LICENSE_NAME)) as f:
+            self.assertEqual(f.read(), "MIT")
+
+    def test_with_license_but_none_in_the_archive_writes_nothing(self):
+        make_release(self.rel, license=False)
+        with self.assertRaises(fetch.FetchError) as ctx:
+            fetch.fetch("a/b", "v1", "linux", "x64", self.dest,
+                        pathlib.Path(self.rel).as_uri(), with_license=True)
+        self.assertIn(fetch.LICENSE_NAME, str(ctx.exception))
+        self.assertFalse(os.path.exists(self.dest) and os.listdir(self.dest))
+
+    def test_main_with_license(self):
+        make_release(self.rel)
+        code = fetch.main(["--os", "linux", "--arch", "x64", "--dest", self.dest,
+                           "--base-url", pathlib.Path(self.rel).as_uri(), "--with-license"])
+        self.assertEqual(code, 0)
+        self.assertIn(fetch.LICENSE_NAME, os.listdir(self.dest))
 
     @unittest.skipIf(os.name == "nt", "POSIX permissions")
     def test_library_is_not_private(self):

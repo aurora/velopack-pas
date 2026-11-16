@@ -2,12 +2,15 @@
 """Downloads the Velopack native library for velopack-pas from a GitHub release.
 
 The library is verified against the SHA256SUMS file of the same release before
-anything is written. Only the library file is extracted.
+anything is written. Only the library file is extracted, and with
+--with-license also Velopack's license text (LICENSE-velopack.txt), which has
+to be shipped together with the library.
 
 Examples:
   fetch-native.py --dest build                  # latest stable release, this machine
   fetch-native.py --version v0.1.0-beta.1 --dest bin --arch x86
   fetch-native.py --print-url                   # show what would be downloaded
+  fetch-native.py --dest dist --with-license    # library plus LICENSE-velopack.txt
 
 IMPORTANT: --arch is the architecture of YOUR EXECUTABLE, not of the machine. A
 32-bit Free Pascal program on 64-bit Windows needs --arch x86. The default is
@@ -27,6 +30,9 @@ import urllib.request
 import zipfile
 
 DEFAULT_REPO = "aurora/velopack-pas"
+
+# Name of Velopack's license text inside the archives (tools/package-native.py).
+LICENSE_NAME = "LICENSE-velopack.txt"
 
 # Must match tools/package-native.py (a unit test checks that).
 LIBRARY_NAME = {
@@ -94,22 +100,15 @@ def expected_sha256(sums_text, name):
     raise FetchError("%s is not listed in SHA256SUMS" % name)
 
 
-def install_library(archive_bytes, os_name, dest):
-    """Writes only the library out of the archive; returns its path."""
-    lib = LIBRARY_NAME[os_name]
-    try:
-        z = zipfile.ZipFile(io.BytesIO(archive_bytes))
-        data = z.read(lib)
-    except (zipfile.BadZipFile, KeyError):
-        raise FetchError("the archive does not contain " + lib)
-    os.makedirs(dest, exist_ok=True)
-    target = os.path.join(dest, lib)
+def write_atomic(dest, name, data, mode):
+    """Writes a file so that it is never seen half-written; returns its path."""
+    target = os.path.join(dest, name)
     fd, tmp = tempfile.mkstemp(dir=dest, prefix=".fetch-native-")
     try:
         with os.fdopen(fd, "wb") as f:
             f.write(data)
-        os.chmod(tmp, 0o755)  # mkstemp creates 0600; libraries are normally shared
-        os.replace(tmp, target)  # atomic: never leaves a half-written library
+        os.chmod(tmp, mode)  # mkstemp creates 0600
+        os.replace(tmp, target)
     except BaseException:
         if os.path.exists(tmp):
             os.unlink(tmp)
@@ -117,7 +116,30 @@ def install_library(archive_bytes, os_name, dest):
     return target
 
 
-def fetch(repo, version, os_name, arch, dest, url_override=None):
+def install_library(archive_bytes, os_name, dest, with_license=False):
+    """Writes only the library (and optionally the license) out of the
+    archive; returns the library's path."""
+    lib = LIBRARY_NAME[os_name]
+    try:
+        z = zipfile.ZipFile(io.BytesIO(archive_bytes))
+    except zipfile.BadZipFile:
+        raise FetchError("the archive does not contain " + lib)
+    wanted = [lib] + ([LICENSE_NAME] if with_license else [])
+    contents = {}
+    for name in wanted:
+        try:
+            contents[name] = z.read(name)
+        except KeyError:
+            raise FetchError("the archive does not contain " + name)
+    os.makedirs(dest, exist_ok=True)
+    # Libraries are normally shared, hence 0755.
+    target = write_atomic(dest, lib, contents[lib], 0o755)
+    if with_license:
+        write_atomic(dest, LICENSE_NAME, contents[LICENSE_NAME], 0o644)
+    return target
+
+
+def fetch(repo, version, os_name, arch, dest, url_override=None, with_license=False):
     base = base_url(repo, version, url_override)
     name = asset_name(os_name, arch)
     sums = read_url(base + "/SHA256SUMS").decode("utf-8", "replace")
@@ -127,7 +149,7 @@ def fetch(repo, version, os_name, arch, dest, url_override=None):
     if got != want:
         raise FetchError("checksum mismatch for %s: expected %s, got %s"
                          % (name, want, got))
-    return install_library(archive, os_name, dest)
+    return install_library(archive, os_name, dest, with_license)
 
 
 def main(argv=None):
@@ -142,6 +164,8 @@ def main(argv=None):
     p.add_argument("--repo", default=DEFAULT_REPO, help="default: " + DEFAULT_REPO)
     p.add_argument("--base-url", help="download from here instead of GitHub "
                    "(a directory with SHA256SUMS and the archives; file:// works)")
+    p.add_argument("--with-license", action="store_true",
+                   help="also write " + LICENSE_NAME + " next to the library")
     p.add_argument("--print-url", action="store_true",
                    help="only print the archive URL")
     a = p.parse_args(argv)
@@ -154,8 +178,11 @@ def main(argv=None):
             return 0
         print("platform: %s %s%s" % (os_name, arch,
               "" if a.arch else "  (detected; use --arch for another executable)"))
-        path = fetch(a.repo, a.version, os_name, arch, a.dest, a.base_url)
+        path = fetch(a.repo, a.version, os_name, arch, a.dest, a.base_url,
+                     a.with_license)
         print("installed: " + path)
+        if a.with_license:
+            print("installed: " + os.path.join(a.dest, LICENSE_NAME))
         return 0
     except FetchError as e:
         print("error: %s" % e, file=sys.stderr)
