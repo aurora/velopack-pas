@@ -40,7 +40,8 @@ jobs:
       - name: Install Lazarus
         run: |
           sudo apt-get update
-          sudo apt-get install -y fpc lazarus-ide-gtk2 lcl-nogui lcl-units
+          # libgtk2.0-dev: the linker needs libgtk-x11-2.0.so, which newer runner images no longer bring along
+          sudo apt-get install -y fpc lazarus-ide-gtk2 lcl-nogui lcl-units libgtk2.0-dev
       - name: Build package
         run: lazbuild packages/lazarus/velopack_pas.lpk
       - name: Build LCL example
