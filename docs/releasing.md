@@ -28,7 +28,7 @@ A release is created by pushing a version tag. The workflow
 |-----|---------|
 | Plan | checks the tag format, reads the pinned Velopack commit |
 | CI passed for this commit | refuses to publish if `ci.yml` has no successful run for the commit |
-| Native library (x5) | builds `velopack_libc` for linux x64, windows x64/x86, macOS x64/arm64 and packages it with `tools/package-native.py` |
+| Native library (x5) | builds `velopack_libc` for linux x64 (in the `manylinux_2_28` container, glibc 2.28 at most, ADR 0010), windows x64/x86, macOS x64/arm64 and packages it with `tools/package-native.py` |
 | Pascal sources | `git archive` of the tag |
 | Publish release | writes `SHA256SUMS` and the notes, creates the release with `gh release create` |
 
