@@ -1,6 +1,6 @@
 # 0009. Publish prebuilt native library builds with releases
 
-- Status: accepted
+- Status: accepted; Linux build base superseded by [0010](0010-build-the-linux-library-on-manylinux.md)
 - Date: 2026-10-12
 
 ## Context
